@@ -13,3 +13,4 @@ const globalError = (err, req, res, next) => {
     next(error);
   }
 };
+export default globalError;

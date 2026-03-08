@@ -1,7 +1,9 @@
 import app from "./src/app.js";
 import { PORT } from "./src/config/env.config.js";
+import globalError from "./src/middleware/globalError.middleware.js";
 
-console.log(PORT);
+// console.log(PORT);
 
+app.use(globalError);
 app.listen(PORT, () => console.log(`App running at ${PORT}`));
 // this is it
