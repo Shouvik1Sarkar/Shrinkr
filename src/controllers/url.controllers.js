@@ -5,7 +5,7 @@ import asyncHandler from "../utils/asyncHandler.utils.js";
 
 import crypto from "crypto";
 
-const generateUrl = asyncHandler(async (req, res) => {
+export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url } = req.body;
   if (!original_url) {
     console.log("not");
@@ -18,7 +18,24 @@ const generateUrl = asyncHandler(async (req, res) => {
     uniqueCode: uniqueCode,
   });
 
-  return res.status(200).json(new ApiResponse(200, url, "hello"));
+  if (!url) {
+    throw new ApiError(401, "Url not created.");
+  }
+
+  const new_url = `http://localhost:8000/api/v1/url/${url.uniqueCode}`;
+
+  return res.status(200).json(new ApiResponse(200, new_url, "hello"));
 });
 
-export default generateUrl;
+export const redirectUrl = asyncHandler(async (req, res) => {
+  const { code } = req.params;
+  console.log("CODE: ", code);
+  const url = await Url.findOne({ uniqueCode: code });
+
+  if (!url) {
+    throw new ApiError(401, "uRL NOT FOUND");
+  }
+  const original_url = url.redirectUrl;
+
+  return res.status(201).redirect(original_url);
+});
