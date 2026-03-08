@@ -14,6 +14,10 @@ const urlSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    clicks: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );

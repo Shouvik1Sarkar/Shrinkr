@@ -36,6 +36,16 @@ export const redirectUrl = asyncHandler(async (req, res) => {
     throw new ApiError(401, "uRL NOT FOUND");
   }
   const original_url = url.redirectUrl;
+  let click = url.clicks;
+  console.log("---", click);
+  click += 1;
+  await url.updateOne({
+    clicks: click,
+  });
+
+  url.save();
+
+  console.log("URL: ", url);
 
   return res.status(201).redirect(original_url);
 });
