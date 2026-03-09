@@ -80,6 +80,7 @@ export const redirectUrl = asyncHandler(async (req, res) => {
   // add user (created By)
 
   const analytics = await Analytics.create({
+    url: url._id,
     ip,
     country,
     device,
@@ -91,4 +92,83 @@ export const redirectUrl = asyncHandler(async (req, res) => {
   console.log("analytics: ", analytics);
 
   return res.status(302).redirect(original_url);
+});
+
+export const getUrlStarts = asyncHandler(async (req, res) => {
+  const { code } = req.params;
+  const url = await Url.findOne({ uniqueCode: code });
+  console.log("url: ", url); // new ObjectId('69aef5e668641ee3108aaea5'),
+  if (!url) {
+    console.log("URL not found");
+    return;
+  }
+
+  const result = await Analytics.aggregate([
+    {
+      $match: {
+        url: url._id,
+      },
+    },
+    {
+      $facet: {
+        totalClicks: [
+          {
+            $count: "count",
+          },
+        ],
+
+        countries: [
+          {
+            $group: {
+              _id: "$country",
+              clicks: { $sum: 1 },
+            },
+          },
+        ],
+
+        devices: [
+          {
+            $group: {
+              _id: "$device",
+              clicks: { $sum: 1 },
+            },
+          },
+        ],
+
+        browsers: [
+          {
+            $group: {
+              _id: "$browser",
+              clicks: { $sum: 1 },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  const data = result[0] ?? {};
+
+  const countries = {};
+  // console.lo
+  data.countries.forEach((d) => {
+    countries[d._id] = d.clicks;
+  });
+
+  const devices = {};
+  // console.lo
+  data.devices.forEach((d) => {
+    devices[d._id] = d.clicks;
+  });
+
+  const browsers = {};
+  // console.lo
+  data.browsers.forEach((d) => {
+    browsers[d._id] = d.clicks;
+  });
+
+  const stat = { clicks: url.clicks, countries, devices, browsers };
+
+  // return res.send(analytics);
+  return res.status(200).json(new ApiResponse(200, stat, "this is data"));
 });

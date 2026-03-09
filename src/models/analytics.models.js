@@ -16,6 +16,10 @@ const analyticsSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+analyticsSchema.index({ url: 1 });
+analyticsSchema.index({ url: 1, country: 1 });
+analyticsSchema.index({ url: 1, device: 1 });
+
 const Analytics = mongoose.model("Analytics", analyticsSchema);
 
 export default Analytics;
