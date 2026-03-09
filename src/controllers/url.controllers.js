@@ -5,6 +5,7 @@ import asyncHandler from "../utils/asyncHandler.utils.js";
 import geoip from "geoip-lite";
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
+import Analytics from "../models/analytics.models.js";
 
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url } = req.body;
@@ -48,18 +49,19 @@ export const redirectUrl = asyncHandler(async (req, res) => {
   });
 
   if (!url) {
-    throw new ApiError(401, "uRL NOT FOUND");
+    throw new ApiError(404, "URL NOT FOUND");
   }
 
   const ip =
     req.headers["x-forwarded-for"] || req.socket.remoteAddress || req.ip;
 
   const geo = geoip.lookup(ip);
+  console.log("GEO----------", geo);
   const country = geo?.country || "Unknown";
-
   const parser = new UAParser(req.headers["user-agent"]);
-  const device = parser.getDevice().type || "desktopss";
-  const browser = parser.getBrowser();
+  console.log("0x0x0x0x0x: ", parser.getDevice());
+  const device = parser.getDevice().type || "desktop--";
+  const browser = parser.getBrowser().name;
   const os = parser.getOS().name;
 
   console.log("---------", parser.getDevice().type);
@@ -71,15 +73,22 @@ export const redirectUrl = asyncHandler(async (req, res) => {
 
   click += 1;
   console.log("xxx", click);
-  await url.updateOne({
-    clicks: click,
-  });
-
-  url.analytics.push({ ip, country, device, browser, os });
+  url.clicks = click;
 
   url.save();
+  //************Later**************/
+  // add user (created By)
+
+  const analytics = await Analytics.create({
+    ip,
+    country,
+    device,
+    browser,
+    os,
+  });
 
   console.log("URL: ", url);
+  console.log("analytics: ", analytics);
 
-  return res.status(201).redirect(original_url);
+  return res.status(302).redirect(original_url);
 });

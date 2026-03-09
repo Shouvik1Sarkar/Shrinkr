@@ -21,15 +21,6 @@ const urlSchema = new mongoose.Schema(
     expiryTime: {
       type: Date,
     },
-    analytics: [
-      {
-        ip: String,
-        country: String,
-        device: String,
-        browser: String,
-        os: String,
-      },
-    ],
   },
   { timestamps: true },
 );
