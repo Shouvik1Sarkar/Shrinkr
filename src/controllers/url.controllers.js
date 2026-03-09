@@ -11,11 +11,14 @@ export const generateUrl = asyncHandler(async (req, res) => {
     console.log("not");
     throw new ApiError(401, "please enter url");
   }
-
+  const now = new Date();
+  // const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysLater = new Date(now.getTime() + 1 * 60 * 1000);
   const uniqueCode = crypto.randomBytes(8).toString("base64url");
   const url = await Url.create({
     redirectUrl: original_url,
     uniqueCode: uniqueCode,
+    expiryTime: sevenDaysLater,
   });
 
   if (!url) {
@@ -30,7 +33,10 @@ export const generateUrl = asyncHandler(async (req, res) => {
 export const redirectUrl = asyncHandler(async (req, res) => {
   const { code } = req.params;
   console.log("CODE: ", code);
-  const url = await Url.findOne({ uniqueCode: code });
+  const url = await Url.findOne({
+    uniqueCode: code,
+    expiryTime: { $gt: Date.now() },
+  });
 
   if (!url) {
     throw new ApiError(401, "uRL NOT FOUND");
