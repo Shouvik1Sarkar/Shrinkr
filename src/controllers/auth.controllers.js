@@ -2,6 +2,7 @@ import User from "../models/user.models.js";
 import ApiError from "../utils/ApiError.utils.js";
 import ApiResponse from "../utils/ApiResponse.utils.js";
 import asyncHandler from "../utils/asyncHandler.utils.js";
+import cookieParser from "cookie-parser";
 
 export const createUser = asyncHandler(async (req, res, next) => {
   const { fullName, lastName, userName, password, email } = req.body;
@@ -41,7 +42,7 @@ export const logInUser = asyncHandler(async (req, res) => {
   const { userName, email, password } = req.body;
 
   const findUser = await User.findOne({
-    email,
+    $or: [{ email }, { userName }],
   });
 
   if (!findUser) {
@@ -55,5 +56,13 @@ export const logInUser = asyncHandler(async (req, res) => {
 
   findUser.password = undefined;
 
+  const accessToken = await findUser.setAccessToken(findUser._id);
+  console.log("access------------", accessToken);
+  res.cookie("accessToken", accessToken);
+
   return res.status(201).json(new ApiResponse(201, findUser, "User Logged In"));
+});
+
+export const test = asyncHandler(async (req, res) => {
+  return res.send("Hello");
 });
