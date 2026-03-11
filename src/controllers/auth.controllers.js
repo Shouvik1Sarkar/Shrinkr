@@ -4,6 +4,8 @@ import ApiResponse from "../utils/ApiResponse.utils.js";
 import asyncHandler from "../utils/asyncHandler.utils.js";
 import cookieParser from "cookie-parser";
 
+import { mail } from "../utils/email.utils.js";
+
 export const createUser = asyncHandler(async (req, res, next) => {
   const { fullName, lastName, userName, password, email } = req.body;
 
@@ -34,6 +36,12 @@ export const createUser = asyncHandler(async (req, res, next) => {
   if (!user) {
     throw new ApiError(401, "User not created");
   }
+  const { num, encryptedOTP } = user.generateOTP();
+
+  // mail(user.email, "subject", num.toString());
+
+  console.log(num);
+  console.log(encryptedOTP);
 
   return res.status(201).json(new ApiResponse(201, user, "User created"));
 });

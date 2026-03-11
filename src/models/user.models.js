@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.config.js";
+import crypto from "crypto";
 
 const userSchema = new mongoose.Schema(
   {
@@ -33,7 +34,10 @@ const userSchema = new mongoose.Schema(
     emailVerificationTokenExpiry: {
       type: Date,
     },
-
+    isEmailVerified: {
+      type: String,
+      default: false,
+    },
     refreshToken: {
       type: String,
     },
@@ -54,6 +58,7 @@ userSchema.methods.matchPassword = async function (userPassword) {
   console.log("---", isMatch);
   return isMatch;
 };
+
 const options = {};
 
 userSchema.methods.setAccessToken = async function (id) {
@@ -61,6 +66,21 @@ userSchema.methods.setAccessToken = async function (id) {
     expiresIn: JWT_EXPIRES_IN,
   });
   return jwt_secret;
+};
+
+userSchema.methods.generateOTP = function () {
+  const num = Math.floor(100000 + Math.random() * 900000);
+
+  const encryptedOTP = crypto
+    .createHash("sha256")
+    .update(num.toString()) // put OTP into hash
+    .digest("hex");
+
+  this.emailVerificationToken = encryptedOTP;
+  this.emailVerificationTokenExpiry = Date.now() + 5 * 60 * 1000;
+  console.log(num);
+  console.log(encryptedOTP);
+  return { num, encryptedOTP };
 };
 
 const User = mongoose.model("User", userSchema);
