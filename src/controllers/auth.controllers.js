@@ -56,6 +56,11 @@ export const logInUser = asyncHandler(async (req, res) => {
   if (!findUser) {
     throw new ApiError(401, "User does not exist");
   }
+
+  if (!findUser.isEmailVerified) {
+    throw new ApiError(401, "Email not verified");
+  }
+
   const loggedInUser = await findUser.matchPassword(password);
 
   if (!loggedInUser) {
