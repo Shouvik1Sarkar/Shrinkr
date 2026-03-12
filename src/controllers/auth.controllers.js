@@ -3,6 +3,7 @@ import ApiError from "../utils/ApiError.utils.js";
 import ApiResponse from "../utils/ApiResponse.utils.js";
 import asyncHandler from "../utils/asyncHandler.utils.js";
 import cookieParser from "cookie-parser";
+import crypto from "crypto";
 
 import { mail } from "../utils/email.utils.js";
 
@@ -43,7 +44,42 @@ export const createUser = asyncHandler(async (req, res, next) => {
   console.log(num);
   console.log(encryptedOTP);
 
+  console.log("----", user.emailVerificationToken);
+  await user.save({ validateBeforeSave: false });
   return res.status(201).json(new ApiResponse(201, user, "User created"));
+});
+
+export const emailVerification = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    throw new ApiError(500, "No token");
+  }
+  const otp = crypto
+    .createHash("sha256")
+    .update(token.toString()) // put OTP into hash
+    .digest("hex");
+
+  console.log("OTP: ", otp);
+  const user = await User.findOne({
+    $and: [
+      { emailVerificationToken: otp },
+      { emailVerificationTokenExpiry: { $gt: Date.now() } },
+    ],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "Invalid OTP");
+  }
+
+  user.isEmailVerified = true;
+
+  user.emailVerificationToken = undefined;
+  user.emailVerificationTokenExpiry = undefined;
+
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(new ApiResponse(200, null, "Email verified"));
 });
 
 export const logInUser = asyncHandler(async (req, res) => {

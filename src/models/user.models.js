@@ -83,6 +83,19 @@ userSchema.methods.generateOTP = function () {
   return { num, encryptedOTP };
 };
 
+// userSchema.methods.matchOTP = function (otp) {
+//   const isMatch = crypto
+//     .createHash("sha256")
+//     .update(otp.toString()) // put OTP into hash
+//     .digest("hex");
+
+//   // if () {
+
+//   // }
+
+//   return isMatch == this.emailVerificationToken;
+// };
+
 const User = mongoose.model("User", userSchema);
 
 export default User;
