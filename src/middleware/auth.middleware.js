@@ -19,12 +19,12 @@ export async function logInAuth(req, res, next) {
   const user = await User.findById(decodedData._id);
 
   if (!user) {
-    throw new ApiError(404, "User not found---");
+    throw new ApiError(404, "Cookie sessioned out");
   }
 
-  //   if (!user.isEmailVerified) {
-  //     throw new ApiError(401, "Email not verified");
-  //   }
+  if (!user.isEmailVerified) {
+    throw new ApiError(401, "Email not verified");
+  }
 
   req.user = decodedData;
   return next();

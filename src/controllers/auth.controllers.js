@@ -49,6 +49,26 @@ export const createUser = asyncHandler(async (req, res, next) => {
   return res.status(201).json(new ApiResponse(201, user, "User created"));
 });
 
+export const sendEmailVerificationOTP = asyncHandler(async (req, res) => {
+  const { email, userName } = req.body;
+  const user = await User.findOne({
+    $or: [{ email }, { userName }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  const { num, encryptedOTP } = user.generateOTP();
+  console.log(num);
+  console.log(encryptedOTP);
+
+  console.log("----", user.emailVerificationToken);
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(201).json(new ApiResponse(201, num, "OTP Sent."));
+});
+
 export const emailVerification = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
