@@ -27,5 +27,6 @@ export async function logInAuth(req, res, next) {
   }
 
   req.user = decodedData;
+
   return next();
 }
