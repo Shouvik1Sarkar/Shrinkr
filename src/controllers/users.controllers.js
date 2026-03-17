@@ -2,6 +2,7 @@ import User from "../models/user.models.js";
 import ApiError from "../utils/ApiError.utils.js";
 import ApiResponse from "../utils/ApiResponse.utils.js";
 import fs from "fs";
+import { uploadFile } from "../utils/cloudinary.utils.js";
 
 export async function addOrChangeProfilePicture(req, res) {
   const profilePicture = req.file;
@@ -9,7 +10,10 @@ export async function addOrChangeProfilePicture(req, res) {
   if (!profilePicture) {
     throw new ApiError(401, "Profile picture required");
   }
-  fs.unlinkSync(profilePicture.path);
+
+  const cloudinaryPath = await uploadFile(profilePicture.path);
+  console.log("[[[", cloudinaryPath);
+  //   fs.unlinkSync(profilePicture.path);
   const myUser = req.user;
 
   if (!myUser) {
@@ -17,7 +21,7 @@ export async function addOrChangeProfilePicture(req, res) {
   }
 
   const user = await User.findByIdAndUpdate(myUser._id, {
-    profilePicture: profilePicture.path,
+    profilePicture: cloudinaryPath,
   });
 
   return res.status(200).json(new ApiResponse(200, user, "User here"));
