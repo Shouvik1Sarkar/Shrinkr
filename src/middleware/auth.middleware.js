@@ -11,7 +11,8 @@ export async function logInAuth(req, res, next) {
   console.log("accessis: ", accessId);
 
   if (!accessId) {
-    throw new ApiError(401, "Not loggedIn cookie not here");
+    // throw new ApiError(401, "Not loggedIn cookie not here");
+    return next();
   }
 
   const decodedData = await jwt.verify(accessId, JWT_SECRET);

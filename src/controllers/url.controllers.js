@@ -6,6 +6,7 @@ import geoip from "geoip-lite";
 import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import Analytics from "../models/analytics.models.js";
+import User from "../models/user.models.js";
 
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url } = req.body;
@@ -13,6 +14,10 @@ export const generateUrl = asyncHandler(async (req, res) => {
     console.log("not");
     throw new ApiError(401, "please enter url");
   }
+  const myUser = req.user;
+
+  const user = await User.findById(myUser?._id);
+  console.log("THIS IS ID: ", user);
   const now = new Date();
   const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   // const sevenDaysLater = new Date(now.getTime() + 1 * 60 * 1000);
@@ -29,6 +34,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
     redirectUrl: original_url,
     uniqueCode: uniqueCode,
     expiryTime: sevenDaysLater,
+    createdBy: user._id ?? undefined,
   });
 
   if (!url) {
@@ -37,7 +43,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
 
   const new_url = `http://localhost:8000/api/v1/url/${url.uniqueCode}`;
 
-  return res.status(200).json(new ApiResponse(200, new_url, "hello"));
+  return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
 });
 
 export const redirectUrl = asyncHandler(async (req, res) => {
@@ -171,4 +177,20 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
 
   // return res.send(analytics);
   return res.status(200).json(new ApiResponse(200, stat, "this is data"));
+});
+
+export const allUrlsOfUser = asyncHandler(async (req, res) => {
+  console.log("PPPPPPPPPPPPP");
+  const myUser = req.user;
+
+  const user = await User.findById(myUser._id);
+  if (!user) {
+    throw new ApiError(400, user, "User not LoggedIn");
+  }
+
+  const allUrls = await Url.find({ createdBy: user._id });
+
+  console.log("mmmmmmmmmmmmm", allUrls);
+
+  return res.status(200).json(new ApiResponse(200, allUrls, "all url"));
 });
