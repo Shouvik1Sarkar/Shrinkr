@@ -1,4 +1,7 @@
-import { addOrChangeProfilePicture } from "../controllers/users.controllers.js";
+import {
+  addOrChangeProfilePicture,
+  updateProfile,
+} from "../controllers/users.controllers.js";
 import express from "express";
 import { logInAuth } from "../middleware/auth.middleware.js";
 import upload from "../middleware/multer.middleware.js";
@@ -11,5 +14,7 @@ userRoutes.post(
   upload.single("profilePicture"),
   addOrChangeProfilePicture,
 );
+
+userRoutes.post("/updateProfile", logInAuth, updateProfile);
 
 export default userRoutes;

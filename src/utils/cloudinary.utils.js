@@ -5,6 +5,7 @@ import {
   CLOUDINARY_CLOUD_KEY,
   CLOUDINARY_CLOUD_SECRET,
 } from "../config/env.config.js";
+
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_CLOUD_KEY,

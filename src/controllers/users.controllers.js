@@ -26,3 +26,27 @@ export async function addOrChangeProfilePicture(req, res) {
 
   return res.status(200).json(new ApiResponse(200, user, "User here"));
 }
+
+export async function updateProfile(req, res) {
+  const { firstName, lastName, userName } = req.body;
+
+  // if (!firstname && !lastName && !userName) {
+  //   throw new ApiError(400, "change one");
+  // }
+
+  const myUser = req.user;
+  const updateData = {};
+
+  if (firstName !== undefined) updateData.firstName = firstName;
+  if (lastName !== undefined) updateData.lastName = lastName;
+  if (userName !== undefined) updateData.userName = userName;
+  if (!myUser) {
+    throw new ApiError(401, "User not Logged In.");
+  }
+
+  const user = await User.findByIdAndUpdate(myUser._id, updateData, {
+    new: true,
+  });
+
+  return res.status(200).json(new ApiResponse(200, user, "User updated"));
+}
