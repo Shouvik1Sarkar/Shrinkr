@@ -10,7 +10,7 @@ app.get("/", (req, res) => {
   res.clearCookie("this");
   //   const a = ";;;";
   console.log("a: ", a);
-  return res.send(a);
+  return res.status(200).send("");
 });
 app.use(globalError);
 app.listen(PORT, () => console.log(`App running at ${PORT}`));

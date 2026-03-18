@@ -1,5 +1,6 @@
 import {
   addOrChangeProfilePicture,
+  logOut,
   updatePassword,
   updateProfile,
 } from "../controllers/users.controllers.js";
@@ -18,5 +19,6 @@ userRoutes.post(
 
 userRoutes.post("/updateProfile", logInAuth, updateProfile);
 userRoutes.post("/updatePassword", logInAuth, updatePassword);
+userRoutes.get("/logOut", logInAuth, logOut);
 
 export default userRoutes;

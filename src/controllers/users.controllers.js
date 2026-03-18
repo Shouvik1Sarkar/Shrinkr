@@ -87,3 +87,15 @@ export async function updatePassword(req, res) {
 
   return res.status(200).json(new ApiResponse(200, user, "done"));
 }
+
+export async function logOut(req, res) {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(400, "User not loggedIn");
+  }
+
+  return res
+    .status(200)
+    .clearCookie("accessToken")
+    .json(new ApiResponse(200, null, "Logged Out"));
+}
