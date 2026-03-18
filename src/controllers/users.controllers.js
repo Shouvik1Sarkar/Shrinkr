@@ -50,3 +50,40 @@ export async function updateProfile(req, res) {
 
   return res.status(200).json(new ApiResponse(200, user, "User updated"));
 }
+
+export async function updatePassword(req, res) {
+  const { oldPassword, newPassword, repeatNewPassword } = req.body;
+
+  const myUser = req.user;
+
+  if (!myUser) {
+    throw new ApiError(401, "User not Logged In.");
+  }
+
+  const user = await User.findById(myUser._id);
+
+  if (!user) {
+    throw new ApiError(401, "User not found");
+  }
+
+  const pass = await user.matchPassword(oldPassword, user.password);
+  // console.log("xxxxx: ", pass);
+  if (!pass) {
+    throw new ApiError(401, "Password did not match");
+  }
+  const pass2 = await user.matchPassword(newPassword, user.password);
+  // console.log("xxxxx: ", pass);
+  if (pass2) {
+    throw new ApiError(401, "not this password");
+  }
+
+  if (newPassword !== repeatNewPassword) {
+    throw new ApiError(401, "new password did not match");
+  }
+
+  user.password = newPassword;
+
+  await user.save();
+
+  return res.status(200).json(new ApiResponse(200, user, "done"));
+}
