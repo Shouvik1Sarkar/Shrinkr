@@ -194,3 +194,25 @@ export const allUrlsOfUser = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, allUrls, "all url"));
 });
+
+export const allActiveUrls = asyncHandler(async (req, res) => {
+  const myUser = req.user;
+  const allUrls = await Url.find({
+    createdBy: myUser._id,
+    expiryTime: { $gt: new Date() },
+  });
+  console.log(allUrls.length);
+  return res.status(200).json(new ApiResponse(200, allUrls, "All Active Urls"));
+});
+
+export const allExpiredUrls = asyncHandler(async (req, res) => {
+  const myUser = req.user;
+  const allUrls = await Url.find({
+    createdBy: myUser._id,
+    expiryTime: { $lt: new Date() },
+  });
+  console.log(allUrls.length);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, allUrls, "All Expired Urls"));
+});

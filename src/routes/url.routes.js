@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  allActiveUrls,
+  allExpiredUrls,
   allUrlsOfUser,
   generateUrl,
   getUrlStarts,
@@ -11,6 +13,8 @@ const urlRoutes = express.Router();
 
 urlRoutes.post("/", logInAuth, generateUrl);
 urlRoutes.get("/allUrlsOfUser", logInAuth, allUrlsOfUser);
+urlRoutes.get("/allActiveUrls", logInAuth, allActiveUrls);
+urlRoutes.get("/allExpiredUrls", logInAuth, allExpiredUrls);
 urlRoutes.get("/stats/:code", getUrlStarts);
 urlRoutes.get("/:code", redirectUrl);
 
