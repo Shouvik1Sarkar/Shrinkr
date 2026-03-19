@@ -7,6 +7,7 @@ import { UAParser } from "ua-parser-js";
 import crypto from "crypto";
 import Analytics from "../models/analytics.models.js";
 import User from "../models/user.models.js";
+import mongoose from "mongoose";
 
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url } = req.body;
@@ -215,4 +216,23 @@ export const allExpiredUrls = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, allUrls, "All Expired Urls"));
+});
+
+export const allClicksOfUser = asyncHandler(async (req, res) => {
+  const myUser = req.user;
+
+  const data = await Url.aggregate([
+    {
+      $match: {
+        createdBy: new mongoose.Types.ObjectId(myUser._id),
+      },
+    },
+    {
+      $group: {
+        _id: "$createdBy",
+        totalClicks: { $sum: "$clicks" },
+      },
+    },
+  ]);
+  return res.status(200).json(new ApiResponse(200, data, "data"));
 });
