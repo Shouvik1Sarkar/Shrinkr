@@ -1,5 +1,6 @@
 import {
   addOrChangeProfilePicture,
+  forgotPassword,
   logOut,
   updatePassword,
   updateProfile,
@@ -20,5 +21,6 @@ userRoutes.post(
 userRoutes.post("/updateProfile", logInAuth, updateProfile);
 userRoutes.post("/updatePassword", logInAuth, updatePassword);
 userRoutes.get("/logOut", logInAuth, logOut);
+userRoutes.get("/forgotPassword", forgotPassword);
 
 export default userRoutes;

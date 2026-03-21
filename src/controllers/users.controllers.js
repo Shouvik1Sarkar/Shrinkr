@@ -3,6 +3,7 @@ import ApiError from "../utils/ApiError.utils.js";
 import ApiResponse from "../utils/ApiResponse.utils.js";
 import fs from "fs";
 import { uploadFile } from "../utils/cloudinary.utils.js";
+import { mail } from "../utils/email.utils.js";
 
 export async function addOrChangeProfilePicture(req, res) {
   const profilePicture = req.file;
@@ -98,4 +99,19 @@ export async function logOut(req, res) {
     .status(200)
     .clearCookie("accessToken")
     .json(new ApiResponse(200, null, "Logged Out"));
+}
+
+export async function forgotPasswordOtp(req, res) {
+  const { email, userName } = req.body;
+  const user = await User.findOne({
+    $or: [{ email }, { userName }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "Wrong credentials");
+  }
+  const otp = Math.floor(1000 + Math.random() * 9000);
+  mail(user.email, "otp", otp.toString());
+
+  return res.status(200).json(new ApiResponse(200, null, "Otp Sent"));
 }
