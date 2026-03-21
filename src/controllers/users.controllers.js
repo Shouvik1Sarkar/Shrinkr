@@ -4,6 +4,7 @@ import ApiResponse from "../utils/ApiResponse.utils.js";
 import fs from "fs";
 import { uploadFile } from "../utils/cloudinary.utils.js";
 import { mail } from "../utils/email.utils.js";
+import crypto from "crypto";
 
 export async function addOrChangeProfilePicture(req, res) {
   const profilePicture = req.file;
@@ -110,8 +111,41 @@ export async function forgotPasswordOtp(req, res) {
   if (!user) {
     throw new ApiError(404, "Wrong credentials");
   }
-  const otp = Math.floor(1000 + Math.random() * 9000);
+  const otp = await user.generateForgotOTP();
   mail(user.email, "otp", otp.toString());
 
-  return res.status(200).json(new ApiResponse(200, null, "Otp Sent"));
+  console.log("----------", user.forgotPasswordOtp);
+
+  // forgotPasswordOtp.forgotPasswordOtp = otp;
+  // await forgotPasswordOtp.save();
+  await user.save();
+
+  console.log("OTP: ", otp);
+
+  return res.status(200).json(new ApiResponse(200, user, "Otp Sent"));
+}
+
+export async function changeForgottenPassword(req, res) {
+  const { otp, newPassword } = req.body;
+
+  const encryptedOTP = crypto
+    .createHash("sha256")
+    .update(otp.toString()) // put OTP into hash
+    .digest("hex");
+
+  console.log("encrypted otp: ", encryptedOTP);
+
+  const user = await User.findOne({
+    forgotPasswordOtp: encryptedOTP,
+    forgotPasswordOtpExpiry: { $gt: new Date() },
+  });
+  console.log("USER: ", user);
+  if (!user) {
+    throw new ApiError(400, "Wrong OTP");
+  }
+  user.password = newPassword;
+  user.forgotPasswordOtp = undefined;
+  user.forgotPasswordOtpExpiry = undefined;
+  await user.save();
+  return res.status(200).json(new ApiResponse(200, user, "user"));
 }

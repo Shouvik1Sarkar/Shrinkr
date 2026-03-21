@@ -44,6 +44,12 @@ const userSchema = new mongoose.Schema(
     refreshToken: {
       type: String,
     },
+    forgotPasswordOtp: {
+      type: String,
+    },
+    forgotPasswordOtpExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true },
 );
@@ -86,18 +92,33 @@ userSchema.methods.generateOTP = function () {
   return { num, encryptedOTP };
 };
 
-// userSchema.methods.matchOTP = function (otp) {
-//   const isMatch = crypto
-//     .createHash("sha256")
-//     .update(otp.toString()) // put OTP into hash
-//     .digest("hex");
+userSchema.methods.matchOTP = function (otp) {
+  const isMatch = crypto
+    .createHash("sha256")
+    .update(otp.toString()) // put OTP into hash
+    .digest("hex");
 
-//   // if () {
+  // if () {
 
-//   // }
+  // }
 
-//   return isMatch == this.emailVerificationToken;
-// };
+  return isMatch == this.emailVerificationToken;
+};
+
+userSchema.methods.generateForgotOTP = function () {
+  const num = Math.floor(100000 + Math.random() * 900000);
+
+  const encryptedOTP = crypto
+    .createHash("sha256")
+    .update(num.toString()) // put OTP into hash
+    .digest("hex");
+
+  this.forgotPasswordOtp = encryptedOTP;
+  this.forgotPasswordOtpExpiry = Date.now() + 5 * 60 * 1000;
+  console.log(num);
+  console.log(encryptedOTP);
+  return { num, encryptedOTP };
+};
 
 const User = mongoose.model("User", userSchema);
 
