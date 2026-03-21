@@ -5,6 +5,7 @@ import {
   logOut,
   updatePassword,
   updateProfile,
+  userStats,
 } from "../controllers/users.controllers.js";
 import express from "express";
 import { logInAuth } from "../middleware/auth.middleware.js";
@@ -24,5 +25,6 @@ userRoutes.post("/updatePassword", logInAuth, updatePassword);
 userRoutes.get("/logOut", logInAuth, logOut);
 userRoutes.get("/forgotPasswordOtp", forgotPasswordOtp);
 userRoutes.get("/changeForgottenPassword", changeForgottenPassword);
+userRoutes.get("/userStats", logInAuth, userStats);
 
 export default userRoutes;

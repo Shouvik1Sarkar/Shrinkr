@@ -5,6 +5,8 @@ import fs from "fs";
 import { uploadFile } from "../utils/cloudinary.utils.js";
 import { mail } from "../utils/email.utils.js";
 import crypto from "crypto";
+import Url from "../models/url.models.js";
+import mongoose from "mongoose";
 
 export async function addOrChangeProfilePicture(req, res) {
   const profilePicture = req.file;
@@ -149,3 +151,56 @@ export async function changeForgottenPassword(req, res) {
   await user.save();
   return res.status(200).json(new ApiResponse(200, user, "user"));
 }
+
+export async function userStats(req, res) {
+  const myUser = req.user;
+
+  const user = await User.findById(myUser._id);
+  if (!user) {
+    throw new ApiError(400, "User not loggedIn");
+  }
+  const numberOfUrls = await Url.find({ createdBy: user._id });
+
+  const data = await Url.aggregate([
+    {
+      $match: {
+        createdBy: new mongoose.Types.ObjectId(myUser._id),
+      },
+    },
+    {
+      $group: {
+        _id: "$createdBy",
+        totalClicks: { $sum: "$clicks" },
+      },
+    },
+  ]);
+
+  const activeUrls = await Url.find({
+    createdBy: user._id,
+    expiryTime: { $gt: new Date() },
+  });
+  const expiredUrls = await Url.find({
+    createdBy: user._id,
+    expiryTime: { $lt: new Date() },
+  });
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        totalurls: numberOfUrls.length,
+        totalclicks: data[0].totalClicks,
+        activeUrls: activeUrls.length,
+        expiredUrls: expiredUrls.length,
+      },
+      "This is urls",
+    ),
+  );
+}
+/**
+ * number of urls
+ * total clicks
+ * active urls
+ * expired urls
+ * **clicks in last 30 days
+ *
+ */
