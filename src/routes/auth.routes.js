@@ -7,11 +7,13 @@ import {
   test,
 } from "../controllers/auth.controllers.js";
 import { logInAuth } from "../middleware/auth.middleware.js";
+import { logInValidator, registerValidator } from "../utils/validate.utils.js";
+import validate from "../middleware/validateError.middleware.js";
 
 const authRoute = express.Router();
 
-authRoute.post("/sign-up", createUser);
-authRoute.post("/sign-in", logInUser);
+authRoute.post("/sign-up", registerValidator(), validate, createUser);
+authRoute.post("/sign-in", logInValidator(), validate, logInUser);
 authRoute.post("/verify", emailVerification);
 authRoute.post("/SendverificationOTP", sendEmailVerificationOTP);
 authRoute.post("/test", logInAuth, test);

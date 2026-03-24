@@ -8,10 +8,10 @@ import crypto from "crypto";
 import { mail } from "../utils/email.utils.js";
 
 export const createUser = asyncHandler(async (req, res, next) => {
-  const { fullName, lastName, userName, password, email } = req.body;
-
+  const { firstName, lastName, userName, password, email } = req.body;
+  const profilePicture = req.file;
   if (
-    [fullName, lastName, userName, password, email].some(
+    [firstName, lastName, userName, password, email].some(
       (e) => e == undefined || e.trim() == "",
     )
   ) {
@@ -27,7 +27,7 @@ export const createUser = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.create({
-    fullName,
+    firstName,
     lastName,
     userName,
     password,
@@ -40,7 +40,13 @@ export const createUser = asyncHandler(async (req, res, next) => {
   const { num, encryptedOTP } = user.generateOTP();
 
   // mail(user.email, "subject", num.toString());
-
+  if (profilePicture) {
+    const imagePath = await uploadFile(profilePicture);
+    if (!imagePath) {
+      throw new ApiError(401, "Image path is not here.");
+    }
+    user.profilePicture = imagePath;
+  }
   console.log(num);
   console.log(encryptedOTP);
 
