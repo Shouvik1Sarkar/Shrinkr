@@ -13,10 +13,17 @@ import {
   verificationValidator,
 } from "../utils/validate.utils.js";
 import validate from "../middleware/validateError.middleware.js";
+import arcjetMiddleware from "../middleware/arcjet.middleware.js";
 
 const authRoute = express.Router();
 
-authRoute.post("/sign-up", registerValidator(), validate, createUser);
+authRoute.post(
+  "/sign-up",
+
+  registerValidator(),
+  validate,
+  createUser,
+);
 authRoute.post("/sign-in", logInValidator(), validate, logInUser);
 authRoute.post("/verify", verificationValidator(), validate, emailVerification);
 authRoute.post("/SendverificationOTP", sendEmailVerificationOTP);

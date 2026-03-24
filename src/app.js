@@ -5,15 +5,17 @@ import authRoute from "./routes/auth.routes.js";
 import urlRoutes from "./routes/url.routes.js";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.routes.js";
+import arcjetMiddleware from "./middleware/arcjet.middleware.js";
 
 const app = express();
 
 connect_db(MONGO_URL);
 app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extends: true }));
+app.use(express.urlencoded({ extended: true }));
+app.set("trust proxy", true);
 app.use(cookieParser());
 // app.use(express.json());
-
+app.use(arcjetMiddleware);
 app.use("/api/v1/auth/", authRoute);
 app.use("/api/v1/url/", urlRoutes);
 app.use("/api/v1/user/", userRoutes);
