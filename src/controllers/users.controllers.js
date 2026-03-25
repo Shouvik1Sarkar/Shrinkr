@@ -196,6 +196,15 @@ export async function userStats(req, res) {
     ),
   );
 }
+
+export async function getMe(req, res) {
+  const myUser = req.user;
+  const user = await User.findById(myUser._id);
+  if (!user) {
+    throw new ApiError(404, "user not found.");
+  }
+  return res.status(200).json(new ApiResponse(200, user, "user"));
+}
 /**
  * number of urls
  * total clicks

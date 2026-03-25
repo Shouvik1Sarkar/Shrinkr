@@ -2,6 +2,7 @@ import {
   addOrChangeProfilePicture,
   changeForgottenPassword,
   forgotPasswordOtp,
+  getMe,
   logOut,
   updatePassword,
   updateProfile,
@@ -26,5 +27,6 @@ userRoutes.get("/logOut", logInAuth, logOut);
 userRoutes.get("/forgotPasswordOtp", forgotPasswordOtp);
 userRoutes.get("/changeForgottenPassword", changeForgottenPassword);
 userRoutes.get("/userStats", logInAuth, userStats);
+userRoutes.get("/getMe", logInAuth, getMe);
 
 export default userRoutes;
