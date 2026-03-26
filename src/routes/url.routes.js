@@ -17,7 +17,7 @@ urlRoutes.get("/allUrlsOfUser", logInAuth, allUrlsOfUser);
 urlRoutes.get("/allActiveUrls", logInAuth, allActiveUrls);
 urlRoutes.get("/allExpiredUrls", logInAuth, allExpiredUrls);
 urlRoutes.get("/allClicksOfUser", logInAuth, allClicksOfUser);
-urlRoutes.get("/stats/:code", getUrlStarts);
+urlRoutes.get("/stats/:code", logInAuth, getUrlStarts);
 urlRoutes.get("/:code", redirectUrl);
 
 export default urlRoutes;

@@ -2,7 +2,7 @@ import User from "../models/user.models.js";
 import ApiError from "../utils/ApiError.utils.js";
 import ApiResponse from "../utils/ApiResponse.utils.js";
 import asyncHandler from "../utils/asyncHandler.utils.js";
-import cookieParser from "cookie-parser";
+
 import crypto from "crypto";
 
 import { mail } from "../utils/email.utils.js";
@@ -114,7 +114,7 @@ export const logInUser = asyncHandler(async (req, res) => {
 
   const findUser = await User.findOne({
     $or: [{ email }, { userName }],
-  });
+  }).select("-password -emailVerificationToken -forgotPasswordOtp");
 
   if (!findUser) {
     throw new ApiError(401, "User does not exist");
@@ -130,7 +130,7 @@ export const logInUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "worng password");
   }
 
-  findUser.password = undefined;
+  // findUser.password = undefined;
 
   const accessToken = await findUser.setAccessToken(findUser._id);
 

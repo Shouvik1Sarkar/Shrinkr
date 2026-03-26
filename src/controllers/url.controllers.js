@@ -103,8 +103,17 @@ export const redirectUrl = asyncHandler(async (req, res) => {
 });
 
 export const getUrlStarts = asyncHandler(async (req, res) => {
+  const myUser = req.user;
+  if (!myUser) {
+    throw new ApiError(400, "You are not authenticated");
+  }
+
+  const user = await User.findById(myUser._id);
+  if (!user) {
+    throw new ApiError(400, "You are not authenticated");
+  }
   const { code } = req.params;
-  const url = await Url.findOne({ uniqueCode: code });
+  const url = await Url.findOne({ createdBy: user._id, uniqueCode: code });
   console.log("url: ", url); // new ObjectId('69aef5e668641ee3108aaea5'),
   if (!url) {
     console.log("URL not found");

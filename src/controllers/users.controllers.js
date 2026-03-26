@@ -7,8 +7,9 @@ import { mail } from "../utils/email.utils.js";
 import crypto from "crypto";
 import Url from "../models/url.models.js";
 import mongoose from "mongoose";
+import asyncHandler from "../utils/asyncHandler.utils.js";
 
-export async function addOrChangeProfilePicture(req, res) {
+export const addOrChangeProfilePicture = asyncHandler(async (req, res) => {
   const profilePicture = req.file;
   console.log("00000: ", profilePicture);
   if (!profilePicture) {
@@ -29,9 +30,9 @@ export async function addOrChangeProfilePicture(req, res) {
   });
 
   return res.status(200).json(new ApiResponse(200, user, "User here"));
-}
+});
 
-export async function updateProfile(req, res) {
+export const updateProfile = asyncHandler(async (req, res) => {
   const { firstName, lastName, userName } = req.body;
 
   // if (!firstname && !lastName && !userName) {
@@ -53,9 +54,9 @@ export async function updateProfile(req, res) {
   }).select("-password");
 
   return res.status(200).json(new ApiResponse(200, user, "User updated"));
-}
+});
 
-export async function updatePassword(req, res) {
+export const updatePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword, repeatNewPassword } = req.body;
 
   const myUser = req.user;
@@ -90,9 +91,9 @@ export async function updatePassword(req, res) {
   await user.save();
 
   return res.status(200).json(new ApiResponse(200, user, "done"));
-}
+});
 
-export async function logOut(req, res) {
+export const logOut = asyncHandler(async (req, res) => {
   const user = req.user;
   if (!user) {
     throw new ApiError(400, "User not loggedIn");
@@ -102,9 +103,9 @@ export async function logOut(req, res) {
     .status(200)
     .clearCookie("accessToken")
     .json(new ApiResponse(200, null, "Logged Out"));
-}
+});
 
-export async function forgotPasswordOtp(req, res) {
+export const forgotPasswordOtp = asyncHandler(async (req, res) => {
   const { email, userName } = req.body;
   const user = await User.findOne({
     $or: [{ email }, { userName }],
@@ -126,9 +127,9 @@ export async function forgotPasswordOtp(req, res) {
   console.log("OTP: ", otp);
 
   return res.status(200).json(new ApiResponse(200, null, "Otp Sent"));
-}
+});
 
-export async function changeForgottenPassword(req, res) {
+export const changeForgottenPassword = asyncHandler(async (req, res) => {
   const { otp, newPassword } = req.body;
 
   const encryptedOTP = crypto
@@ -151,9 +152,9 @@ export async function changeForgottenPassword(req, res) {
   user.forgotPasswordOtpExpiry = undefined;
   await user.save();
   return res.status(200).json(new ApiResponse(200, user, "user"));
-}
+});
 
-export async function userStats(req, res) {
+export const userStats = asyncHandler(async (req, res) => {
   const myUser = req.user;
 
   const user = await User.findById(myUser._id);
@@ -196,16 +197,16 @@ export async function userStats(req, res) {
       "This is urls",
     ),
   );
-}
+});
 
-export async function getMe(req, res) {
+export const getMe = asyncHandler(async (req, res) => {
   const myUser = req.user;
   const user = await User.findById(myUser._id);
   if (!user) {
     throw new ApiError(404, "user not found.");
   }
   return res.status(200).json(new ApiResponse(200, user, "user"));
-}
+});
 
 /**
  * number of urls
