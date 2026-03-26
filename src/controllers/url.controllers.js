@@ -16,6 +16,39 @@ export const generateUrl = asyncHandler(async (req, res) => {
     console.log("not");
     throw new ApiError(401, "please enter url");
   }
+
+  // ✅ Step 1: Validate URL format
+  try {
+    const a = new URL(original_url);
+    console.log("00000: ", a);
+  } catch {
+    throw new ApiError(400, "Invalid URL format");
+  }
+
+  // ✅ Step 2: Check if URL is reachable (runs server-side, no CORS issues)
+  try {
+    const response = await fetch(original_url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(5000),
+    });
+    console.log("RESPONSE: ", response);
+
+    if (!response.ok) {
+      throw new ApiError(
+        400,
+        `URL is not reachable (status: ${response.status})`,
+      );
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error; // rethrow your own errors
+
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new ApiError(400, "URL timed out — site may be down");
+    }
+
+    throw new ApiError(400, `URL is not reachable: ${error.message}`);
+  }
+
   const myUser = req.user;
 
   const user = await User.findById(myUser?._id);
