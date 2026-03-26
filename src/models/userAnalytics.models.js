@@ -20,9 +20,9 @@ const userAnalyticsSchema = new mongoose.Schema(
 // analyticsSchema.index({ url: 1, country: 1 });
 // analyticsSchema.index({ url: 1, device: 1 });
 
-const userAnalytics = mongoose.model("userAnalytics", userAnalyticsSchema);
+const UserAnalytics = mongoose.model("UserAnalytics", userAnalyticsSchema);
 
-export default Analytics;
+export default UserAnalytics;
 
 /**
  * number of urls
@@ -30,5 +30,5 @@ export default Analytics;
  * active urls
  * expired urls
  * **clicks in last 30 days
- * 
+ *
  */

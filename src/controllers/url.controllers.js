@@ -8,6 +8,7 @@ import crypto from "crypto";
 import Analytics from "../models/analytics.models.js";
 import User from "../models/user.models.js";
 import mongoose from "mongoose";
+import { BASE_URL } from "../config/env.config.js";
 
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url } = req.body;
@@ -42,7 +43,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Url not created.");
   }
 
-  const new_url = `http://localhost:8000/api/v1/url/${url.uniqueCode}`;
+  const new_url = `${BASE_URL}/api/v1/url/${url.uniqueCode}`;
 
   return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
 });

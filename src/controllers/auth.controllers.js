@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 
 import { mail } from "../utils/email.utils.js";
+import { uploadFile } from "../utils/cloudinary.utils.js";
 
 export const createUser = asyncHandler(async (req, res, next) => {
   const { firstName, lastName, userName, password, email } = req.body;
@@ -72,7 +73,7 @@ export const sendEmailVerificationOTP = asyncHandler(async (req, res) => {
   console.log("----", user.emailVerificationToken);
   await user.save({ validateBeforeSave: false });
 
-  return res.status(201).json(new ApiResponse(201, num, "OTP Sent."));
+  return res.status(201).json(new ApiResponse(201, null, "OTP Sent."));
 });
 
 export const emailVerification = asyncHandler(async (req, res) => {
@@ -132,10 +133,16 @@ export const logInUser = asyncHandler(async (req, res) => {
   findUser.password = undefined;
 
   const accessToken = await findUser.setAccessToken(findUser._id);
-  console.log("access------------", accessToken);
-  res.cookie("accessToken", accessToken);
 
-  return res.status(201).json(new ApiResponse(201, findUser, "User Logged In"));
+  console.log("access------------", accessToken);
+
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json(new ApiResponse(200, findUser, "User Logged In"));
 });
 
 export const test = asyncHandler(async (req, res) => {

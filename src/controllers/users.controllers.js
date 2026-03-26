@@ -50,7 +50,7 @@ export async function updateProfile(req, res) {
 
   const user = await User.findByIdAndUpdate(myUser._id, updateData, {
     new: true,
-  });
+  }).select("-password");
 
   return res.status(200).json(new ApiResponse(200, user, "User updated"));
 }
@@ -113,6 +113,7 @@ export async function forgotPasswordOtp(req, res) {
   if (!user) {
     throw new ApiError(404, "Wrong credentials");
   }
+
   const otp = await user.generateForgotOTP();
   mail(user.email, "otp", otp.toString());
 
@@ -124,7 +125,7 @@ export async function forgotPasswordOtp(req, res) {
 
   console.log("OTP: ", otp);
 
-  return res.status(200).json(new ApiResponse(200, user, "Otp Sent"));
+  return res.status(200).json(new ApiResponse(200, null, "Otp Sent"));
 }
 
 export async function changeForgottenPassword(req, res) {
@@ -188,7 +189,7 @@ export async function userStats(req, res) {
       200,
       {
         totalurls: numberOfUrls.length,
-        totalclicks: data[0].totalClicks,
+        totalclicks: data[0]?.totalClicks ?? 0,
         activeUrls: activeUrls.length,
         expiredUrls: expiredUrls.length,
       },
@@ -205,6 +206,7 @@ export async function getMe(req, res) {
   }
   return res.status(200).json(new ApiResponse(200, user, "user"));
 }
+
 /**
  * number of urls
  * total clicks

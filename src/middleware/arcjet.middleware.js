@@ -37,6 +37,7 @@ const arcjetMiddleware = async (req, res, next) => {
 
     if (error instanceof ApiError) {
       throw error; // Let global error handler deal with it
+      // throw new ApiError(400, "error archjet", error); // Let global error handler deal with it
     }
 
     // throw new ApiError(500, "rate limiter error", error);

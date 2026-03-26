@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 
-dotenv.config({ path: `./.env.${process.NODE_ENV || "development"}.local` });
+dotenv.config({
+  path: `./.env.${process.env.NODE_ENV || "development"}.local`,
+});
 export const {
   PORT,
   MONGO_URL,
@@ -14,4 +16,5 @@ export const {
   CLOUDINARY_CLOUD_KEY,
   CLOUDINARY_CLOUD_SECRET,
   ARCJET_KEY,
+  BASE_URL,
 } = process.env;
