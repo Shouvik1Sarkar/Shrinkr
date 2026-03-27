@@ -8,6 +8,8 @@ import crypto from "crypto";
 import Url from "../models/url.models.js";
 import mongoose from "mongoose";
 import asyncHandler from "../utils/asyncHandler.utils.js";
+import { REFRESH_TOKEN_SECRET } from "../config/env.config.js";
+import jwt from "jsonwebtoken";
 
 export const addOrChangeProfilePicture = asyncHandler(async (req, res) => {
   const profilePicture = req.file;
@@ -206,6 +208,41 @@ export const getMe = asyncHandler(async (req, res) => {
     throw new ApiError(404, "user not found.");
   }
   return res.status(200).json(new ApiResponse(200, user, "user"));
+});
+
+export const refreshToken = asyncHandler(async (req, res) => {
+  const refresh = req.cookies.refreshToken;
+
+  if (!refresh) {
+    throw new ApiError(401, "No refresh token");
+  }
+  let decoded;
+  console.log("REFRESH: ", refresh);
+  try {
+    decoded = jwt.verify(refresh, REFRESH_TOKEN_SECRET);
+  } catch (error) {
+    throw new ApiError(401, "No refresh token");
+  }
+  console.log("DECODED: ", decoded);
+  const user = await User.findOne({
+    _id: decoded._id,
+    refreshToken: refresh,
+  });
+  // console.log("USER: ", user);
+
+  const accessToken = user.setAccessToken(user._id);
+
+  if (!accessToken) {
+  }
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    })
+    .json(new ApiResponse(200, null, "Access Token set"));
 });
 
 /**

@@ -111,10 +111,10 @@ export const emailVerification = asyncHandler(async (req, res) => {
 
 export const logInUser = asyncHandler(async (req, res) => {
   const { userName, email, password } = req.body;
-
+  // console.log("0000000000000: ", email);
   const findUser = await User.findOne({
     $or: [{ email }, { userName }],
-  }).select("-password -emailVerificationToken -forgotPasswordOtp");
+  }).select("-emailVerificationToken -forgotPasswordOtp");
 
   if (!findUser) {
     throw new ApiError(401, "User does not exist");
@@ -130,19 +130,29 @@ export const logInUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "worng password");
   }
 
-  // findUser.password = undefined;
-
   const accessToken = await findUser.setAccessToken(findUser._id);
+  const refreshToken = await findUser.setRefreshToken(findUser._id);
 
-  console.log("access------------", accessToken);
-
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+  await User.findByIdAndUpdate(findUser._id, {
+    refreshToken: refreshToken, // raw token, no hashing
   });
 
-  return res.status(200).json(new ApiResponse(200, findUser, "User Logged In"));
+  findUser.password = undefined;
+  findUser.refreshToken = undefined;
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    })
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    })
+    .json(new ApiResponse(200, findUser, "User Logged In"));
 });
 
 export const test = asyncHandler(async (req, res) => {

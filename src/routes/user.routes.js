@@ -4,6 +4,7 @@ import {
   forgotPasswordOtp,
   getMe,
   logOut,
+  refreshToken,
   updatePassword,
   updateProfile,
   userStats,
@@ -28,5 +29,6 @@ userRoutes.get("/forgotPasswordOtp", forgotPasswordOtp);
 userRoutes.get("/changeForgottenPassword", changeForgottenPassword);
 userRoutes.get("/userStats", logInAuth, userStats);
 userRoutes.get("/getMe", logInAuth, getMe);
+userRoutes.get("/refreshToken", refreshToken);
 
 export default userRoutes;

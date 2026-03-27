@@ -64,27 +64,27 @@ export function logInValidator() {
     }),
   ];
 }
-export function verificationValidator() {
-  return [
-    body("email")
-      .optional()
-      .trim()
-      .isEmail()
-      .withMessage("Enter a valid email")
-      .normalizeEmail(),
+// export function verificationValidator() {
+//   return [
+//     body("email")
+//       .optional()
+//       .trim()
+//       .isEmail()
+//       .withMessage("Enter a valid email")
+//       .normalizeEmail(),
 
-    body("userName")
-      .optional()
-      .trim()
-      .isLength({ min: 6 })
-      .withMessage("Username must be at least 6 characters"),
+//     body("userName")
+//       .optional()
+//       .trim()
+//       .isLength({ min: 6 })
+//       .withMessage("Username must be at least 6 characters"),
 
-    body().custom((value, { req }) => {
-      if (!req.body.email && !req.body.userName) {
-        throw new ApiError(400, "Either email or username is required");
-      }
+//     body().custom((value, { req }) => {
+//       if (!req.body.email && !req.body.userName) {
+//         throw new ApiError(400, "Either email or username is required");
+//       }
 
-      return true;
-    }),
-  ];
-}
+//       return true;
+//     }),
+//   ];
+// }

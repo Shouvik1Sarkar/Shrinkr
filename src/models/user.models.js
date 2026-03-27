@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.config.js";
+import {
+  JWT_EXPIRES_IN,
+  JWT_SECRET,
+  REFRESH_TOKEN_EXPIRES,
+  REFRESH_TOKEN_SECRET,
+} from "../config/env.config.js";
 import crypto from "crypto";
 
 const userSchema = new mongoose.Schema(
@@ -74,6 +79,13 @@ userSchema.methods.setAccessToken = async function (id) {
   const jwt_secret = jwt.sign({ _id: id }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
   });
+  return jwt_secret;
+};
+userSchema.methods.setRefreshToken = async function (id) {
+  const jwt_secret = jwt.sign({ _id: id }, REFRESH_TOKEN_SECRET, {
+    expiresIn: REFRESH_TOKEN_EXPIRES,
+  });
+  console.log("JWT: ", jwt_secret);
   return jwt_secret;
 };
 
