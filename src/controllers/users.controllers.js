@@ -226,14 +226,15 @@ export const refreshToken = asyncHandler(async (req, res) => {
   console.log("DECODED: ", decoded);
   const user = await User.findOne({
     _id: decoded._id,
-    refreshToken: refresh,
+    refreshToken: refresh.toString(),
   });
   // console.log("USER: ", user);
 
-  const accessToken = user.setAccessToken(user._id);
+  const accessToken = await user.setAccessToken(user._id);
 
   if (!accessToken) {
   }
+  console.log("ACCESSXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX: ", accessToken);
 
   return res
     .status(200)

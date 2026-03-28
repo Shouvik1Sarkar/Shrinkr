@@ -21,6 +21,10 @@ const urlSchema = new mongoose.Schema(
     expiryTime: {
       type: Date,
     },
+    isDeActivate: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

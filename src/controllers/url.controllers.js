@@ -9,9 +9,10 @@ import Analytics from "../models/analytics.models.js";
 import User from "../models/user.models.js";
 import mongoose from "mongoose";
 import { BASE_URL } from "../config/env.config.js";
+import QRCode from "qrcode";
 
 export const generateUrl = asyncHandler(async (req, res) => {
-  const { original_url } = req.body;
+  const { original_url, expiryTime } = req.body;
   if (!original_url) {
     console.log("not");
     throw new ApiError(401, "please enter url");
@@ -56,6 +57,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
   const now = new Date();
   const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   // const sevenDaysLater = new Date(now.getTime() + 1 * 60 * 1000);
+  const customExpiry = parseExpiry(expiryTime);
 
   let uniqueCode;
   let exists = true;
@@ -68,7 +70,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
   const url = await Url.create({
     redirectUrl: original_url,
     uniqueCode: uniqueCode,
-    expiryTime: sevenDaysLater,
+    expiryTime: customExpiry ?? sevenDaysLater,
     createdBy: user._id ?? undefined,
   });
 
@@ -79,6 +81,131 @@ export const generateUrl = asyncHandler(async (req, res) => {
   const new_url = `${BASE_URL}/api/v1/url/${url.uniqueCode}`;
 
   return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
+});
+
+export const generateCustomizedUrl = asyncHandler(async (req, res) => {
+  const { original_url, expiryTime } = req.body;
+  if (!original_url) {
+    console.log("not");
+    throw new ApiError(401, "please enter url");
+  }
+
+  // ✅ Step 1: Validate URL format
+  try {
+    const a = new URL(original_url);
+    console.log("00000: ", a);
+  } catch {
+    throw new ApiError(400, "Invalid URL format");
+  }
+
+  // ✅ Step 2: Check if URL is reachable (runs server-side, no CORS issues)
+  try {
+    const response = await fetch(original_url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(5000),
+    });
+    console.log("RESPONSE: ", response);
+
+    if (!response.ok) {
+      throw new ApiError(
+        400,
+        `URL is not reachable (status: ${response.status})`,
+      );
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error; // rethrow your own errors
+
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new ApiError(400, "URL timed out — site may be down");
+    }
+
+    throw new ApiError(400, `URL is not reachable: ${error.message}`);
+  }
+
+  const customExpiry = parseExpiry(expiryTime);
+  // if (!customExpiry) {
+  //   throw new ApiError(400, "not expiry time");
+  // }
+  const myUser = req.user;
+
+  const user = await User.findById(myUser?._id);
+  console.log("THIS IS ID: ", user);
+  const now = new Date();
+  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  // const sevenDaysLater = new Date(now.getTime() + 1 * 60 * 1000);
+
+  let { uniqueCode } = req.body;
+  let exists = await Url.findOne({ uniqueCode });
+
+  if (exists) {
+    throw new ApiError(400, "Already exists");
+  }
+
+  // console.log("00000000");
+
+  const url = await Url.create({
+    redirectUrl: original_url,
+    uniqueCode: uniqueCode,
+    expiryTime: customExpiry ?? sevenDaysLater,
+    createdBy: user._id ?? undefined,
+  });
+
+  if (!url) {
+    throw new ApiError(401, "Url not created.");
+  }
+
+  const new_url = `${BASE_URL}/api/v1/url/${url.uniqueCode}`;
+
+  return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
+});
+
+export const generateQRCode = asyncHandler(async (req, res) => {
+  const { original_url } = req.body;
+  try {
+    const a = new URL(original_url);
+    console.log("00000: ", a);
+  } catch {
+    throw new ApiError(400, "Invalid URL format");
+  }
+
+  // ✅ Step 2: Check if URL is reachable (runs server-side, no CORS issues)
+  try {
+    const response = await fetch(original_url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(5000),
+    });
+    console.log("RESPONSE: ", response);
+
+    if (!response.ok) {
+      throw new ApiError(
+        400,
+        `URL is not reachable (status: ${response.status})`,
+      );
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error; // rethrow your own errors
+
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new ApiError(400, "URL timed out — site may be down");
+    }
+
+    throw new ApiError(400, `URL is not reachable: ${error.message}`);
+  }
+  try {
+    // returns a base64 encoded PNG string
+    const qrCode = await QRCode.toDataURL(original_url, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: "#000000",
+        light: "#ffffff",
+      },
+    });
+    // return qrCode; // looks like: "data:image/png;base64,iVBORw0KGgo..."
+    return res.status(200).json(new ApiResponse(200, qrCode, "done"));
+  } catch (error) {
+    throw new Error(`QR code generation failed: ${error}`);
+  }
 });
 
 export const redirectUrl = asyncHandler(async (req, res) => {
@@ -92,6 +219,13 @@ export const redirectUrl = asyncHandler(async (req, res) => {
   if (!url) {
     throw new ApiError(404, "URL NOT FOUND");
   }
+
+  if (url.isDeActivate) {
+    console.log("deactivatred");
+    throw new ApiError(404, "de activated");
+  }
+
+  console.log("DEACTIVATED: ", url.isDeActivate);
 
   const ip =
     req.headers["x-forwarded-for"] || req.socket.remoteAddress || req.ip;
@@ -279,3 +413,72 @@ export const allClicksOfUser = asyncHandler(async (req, res) => {
   ]);
   return res.status(200).json(new ApiResponse(200, data, "data"));
 });
+
+export const deleteUrl = asyncHandler(async (req, res) => {
+  const myUser = req.user;
+
+  const user = await User.findById(myUser._id);
+  // console.log("user id: ", user);
+  if (!user) {
+    throw new ApiError(400, "User not logged In");
+  }
+  // console.log("user id: ", user);
+
+  const { url } = req.params;
+
+  const deletedId = await Url.findOneAndDelete({
+    createdBy: user._id,
+    uniqueCode: url,
+  });
+  if (!deletedId) {
+    throw new ApiError(400, "not found url");
+  }
+  console.log("deleted: ", deletedId);
+  return res.status(200).json(new ApiResponse(200, null, "deleted"));
+});
+
+export const deActivate = asyncHandler(async (req, res) => {
+  const { url } = req.params;
+
+  const myUser = req.user;
+  const user = await User.findById(myUser._id);
+  const findUrl = await Url.findOne({ createdBy: user._id, uniqueCode: url });
+
+  if (!findUrl) {
+    throw new ApiError(400, "URL NOT FOUND");
+  }
+
+  if (findUrl.isDeActivate) {
+    findUrl.isDeActivate = false;
+    await findUrl.save({ validateBeforeSave: false });
+    res.status(200).json(new ApiResponse(200, null, "ReActivated"));
+  } else {
+    findUrl.isDeActivate = true;
+    await findUrl.save({ validateBeforeSave: false });
+    res.status(200).json(new ApiResponse(200, null, "DeActivated"));
+  }
+});
+
+function parseExpiry(str) {
+  if (!str) return null;
+
+  const units = {
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+    w: 7 * 24 * 60 * 60 * 1000,
+  };
+
+  const match = str.trim().match(/^(\d+)([mhdw])$/);
+
+  if (!match)
+    throw new ApiError(400, "Invalid expiry format. Use: 30m, 2h, 1d, 1w");
+
+  const value = parseInt(match[1]);
+  const unit = match[2];
+
+  if (value <= 0)
+    throw new ApiError(400, "Expiry value must be greater than 0");
+
+  return new Date(Date.now() + value * units[unit]);
+}
