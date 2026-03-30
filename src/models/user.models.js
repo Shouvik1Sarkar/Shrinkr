@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
 import {
   JWT_EXPIRES_IN,
   JWT_SECRET,
@@ -118,7 +119,8 @@ userSchema.methods.matchOTP = function (otp) {
 };
 
 userSchema.methods.generateForgotOTP = function () {
-  const num = Math.floor(100000 + Math.random() * 900000);
+  // const num = Math.floor(100000 + Math.random() * 900000);
+  const num = crypto.randomInt(100000, 999999);
 
   const encryptedOTP = crypto
     .createHash("sha256")

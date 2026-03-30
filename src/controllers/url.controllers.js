@@ -11,6 +11,9 @@ import mongoose from "mongoose";
 import { BASE_URL } from "../config/env.config.js";
 import QRCode from "qrcode";
 
+import fetch from "node-fetch";
+import { useAgent } from "request-filtering-agent";
+
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url, expiryTime } = req.body;
   if (!original_url) {
@@ -31,6 +34,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
     const response = await fetch(original_url, {
       method: "HEAD",
       signal: AbortSignal.timeout(5000),
+      agent: useAgent(original_url),
     });
     console.log("RESPONSE: ", response);
 

@@ -26,6 +26,7 @@
     "multer": "^2.1.1",
     "nodemailer": "^8.0.2",
     "qrcode": "^1.5.4",
+    "request-filtering-agent": "^3.2.0",
     "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {

@@ -117,16 +117,17 @@ export const forgotPasswordOtp = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Wrong credentials");
   }
 
-  const otp = await user.generateForgotOTP();
-  mail(user.email, "otp", otp.toString());
+  const { num, encryptedOTP } = await user.generateForgotOTP();
+  // hashed Token is set in the method - generateForgotOTP()
+  mail(user.email, "otp", num.toString());
 
   console.log("----------", user.forgotPasswordOtp);
-
   // forgotPasswordOtp.forgotPasswordOtp = otp;
   // await forgotPasswordOtp.save();
   await user.save();
 
-  console.log("OTP: ", otp);
+  console.log("OTP: ", encryptedOTP);
+  console.log("OTP: ", num);
 
   return res.status(200).json(new ApiResponse(200, null, "Otp Sent"));
 });
