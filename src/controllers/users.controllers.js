@@ -92,7 +92,7 @@ export const updatePassword = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  return res.status(200).json(new ApiResponse(200, user, "done"));
+  return res.status(200).json(new ApiResponse(200, null, "Password Updated"));
 });
 
 export const logOut = asyncHandler(async (req, res) => {
