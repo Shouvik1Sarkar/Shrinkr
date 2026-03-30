@@ -70,6 +70,10 @@ export const sendEmailVerificationOTP = asyncHandler(async (req, res) => {
   console.log(num);
   console.log(encryptedOTP);
 
+  // send email
+
+  mail(user.email, "subject", num.toString());
+
   console.log("----", user.emailVerificationToken);
   await user.save({ validateBeforeSave: false });
 

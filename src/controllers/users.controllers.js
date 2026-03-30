@@ -104,6 +104,7 @@ export const logOut = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .clearCookie("accessToken")
+    .clearCookie("refreshToken")
     .json(new ApiResponse(200, null, "Logged Out"));
 });
 
@@ -154,17 +155,13 @@ export const changeForgottenPassword = asyncHandler(async (req, res) => {
   user.forgotPasswordOtp = undefined;
   user.forgotPasswordOtpExpiry = undefined;
   await user.save();
-  return res.status(200).json(new ApiResponse(200, user, "user"));
+  return res.status(200).json(new ApiResponse(200, null, "Password changed."));
 });
 
 export const userStats = asyncHandler(async (req, res) => {
   const myUser = req.user;
 
-  const user = await User.findById(myUser._id);
-  if (!user) {
-    throw new ApiError(400, "User not loggedIn");
-  }
-  const numberOfUrls = await Url.find({ createdBy: user._id });
+  const now = new Date();
 
   const data = await Url.aggregate([
     {
@@ -175,27 +172,26 @@ export const userStats = asyncHandler(async (req, res) => {
     {
       $group: {
         _id: "$createdBy",
+        totalUrls: { $sum: 1 },
         totalClicks: { $sum: "$clicks" },
+        activeUrls: { $sum: { $cond: [{ $gt: ["$expiryTime", now] }, 1, 0] } },
+        expiredUrls: {
+          $sum: { $cond: [{ $lte: ["$expiryTime", now] }, 1, 0] },
+        },
       },
     },
   ]);
 
-  const activeUrls = await Url.find({
-    createdBy: user._id,
-    expiryTime: { $gt: new Date() },
-  });
-  const expiredUrls = await Url.find({
-    createdBy: user._id,
-    expiryTime: { $lt: new Date() },
-  });
+  const stats = data[0];
+
   return res.status(200).json(
     new ApiResponse(
       200,
       {
-        totalurls: numberOfUrls.length,
-        totalclicks: data[0]?.totalClicks ?? 0,
-        activeUrls: activeUrls.length,
-        expiredUrls: expiredUrls.length,
+        totalUrls: stats?.totalUrls ?? 0,
+        totalClicks: stats?.totalClicks ?? 0,
+        activeUrls: stats?.activeUrls ?? 0,
+        expiredUrls: stats?.expiredUrls ?? 0,
       },
       "This is urls",
     ),
@@ -230,6 +226,9 @@ export const refreshToken = asyncHandler(async (req, res) => {
     refreshToken: refresh.toString(),
   });
   // console.log("USER: ", user);
+  if (!user) {
+    throw new ApiError(401, "Not found user");
+  }
 
   const accessToken = await user.setAccessToken(user._id);
 

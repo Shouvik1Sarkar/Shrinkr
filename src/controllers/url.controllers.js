@@ -254,7 +254,7 @@ export const redirectUrl = asyncHandler(async (req, res) => {
   console.log("xxx", click);
   url.clicks = click;
 
-  url.save();
+  await url.save();
   //************Later**************/
   // add user (created By)
 
@@ -288,7 +288,7 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
   console.log("url: ", url); // new ObjectId('69aef5e668641ee3108aaea5'),
   if (!url) {
     console.log("URL not found");
-    return;
+    throw new ApiError(400, "URL not found");
   }
 
   const result = await Analytics.aggregate([
