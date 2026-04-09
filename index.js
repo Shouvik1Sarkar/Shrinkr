@@ -15,4 +15,3 @@ import globalError from "./src/middleware/globalError.middleware.js";
 app.use(globalError);
 app.listen(PORT, () => console.log(`App running at ${PORT}`));
 // this is it
-d
