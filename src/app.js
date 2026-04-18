@@ -10,7 +10,7 @@ import cors from "cors";
 
 const app = express();
 
-connect_db(MONGO_URL);
+// connect_db(MONGO_URL);
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
 
