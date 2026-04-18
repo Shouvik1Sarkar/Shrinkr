@@ -1,5 +1,5 @@
 import app from "./src/app.js";
-import { PORT } from "./src/config/env.config.js";
+import { PORT } from "./config/env.config.js";
 import globalError from "./src/middleware/globalError.middleware.js";
 
 // console.log(PORT);

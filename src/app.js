@@ -1,6 +1,6 @@
 import express from "express";
-import { MONGO_URL } from "./config/env.config.js";
-import connect_db from "./connection/db.js";
+import { MONGO_URL } from "../config/env.config.js";
+import connect_db from "../connection/db.js";
 import authRoute from "./routes/auth.routes.js";
 import urlRoutes from "./routes/url.routes.js";
 import cookieParser from "cookie-parser";

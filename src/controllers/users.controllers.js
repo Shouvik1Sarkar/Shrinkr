@@ -8,7 +8,7 @@ import crypto from "crypto";
 import Url from "../models/url.models.js";
 import mongoose from "mongoose";
 import asyncHandler from "../utils/asyncHandler.utils.js";
-import { REFRESH_TOKEN_SECRET } from "../config/env.config.js";
+import { REFRESH_TOKEN_SECRET } from "../../config/env.config.js";
 import jwt from "jsonwebtoken";
 
 export const addOrChangeProfilePicture = asyncHandler(async (req, res) => {

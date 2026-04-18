@@ -1,7 +1,7 @@
 import cookieParser from "cookie-parser";
 
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config/env.config.js";
+import { JWT_SECRET } from "../../config/env.config.js";
 import ApiError from "../utils/ApiError.utils.js";
 import User from "../models/user.models.js";
 

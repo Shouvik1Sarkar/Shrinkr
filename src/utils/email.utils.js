@@ -4,7 +4,7 @@ import {
   MAILTRAP_PASSWORD,
   MAILTRAP_PORT,
   MAILTRAP_USERNAME,
-} from "../config/env.config.js";
+} from "../../config/env.config.js";
 
 const data = {
   host: MAILTRAP_HOST,

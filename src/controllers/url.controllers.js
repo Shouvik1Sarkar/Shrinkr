@@ -8,7 +8,7 @@ import crypto from "crypto";
 import Analytics from "../models/analytics.models.js";
 import User from "../models/user.models.js";
 import mongoose from "mongoose";
-import { BASE_URL } from "../config/env.config.js";
+import { BASE_URL } from "../../config/env.config.js";
 import QRCode from "qrcode";
 
 import fetch from "node-fetch";

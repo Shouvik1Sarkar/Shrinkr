@@ -7,7 +7,7 @@ import {
   JWT_SECRET,
   REFRESH_TOKEN_EXPIRES,
   REFRESH_TOKEN_SECRET,
-} from "../config/env.config.js";
+} from "../../config/env.config.js";
 import crypto from "crypto";
 
 const userSchema = new mongoose.Schema(
