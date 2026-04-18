@@ -19,4 +19,5 @@ export const {
   BASE_URL,
   REFRESH_TOKEN_SECRET,
   REFRESH_TOKEN_EXPIRES,
+  MONGODB_TEST_URL,
 } = process.env;

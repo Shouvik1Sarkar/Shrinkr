@@ -23,6 +23,7 @@ authRoute.post(
 authRoute.post("/sign-in", logInValidator(), validate, logInUser);
 authRoute.post("/verify", emailVerification);
 authRoute.post("/SendverificationOTP", sendEmailVerificationOTP);
-authRoute.post("/test", logInAuth, test);
+// authRoute.get("/test", logInAuth, test);
+authRoute.get("/test", test);
 
 export default authRoute;
