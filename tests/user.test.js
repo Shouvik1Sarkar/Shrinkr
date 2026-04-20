@@ -72,13 +72,47 @@ beforeAll(async () => {
   // console.log("-----CONNECTED------");
 }, 15000);
 
+// afterAll(async () => {
+//   const collections = mongoose.connection.collections;
+//   for (const key in collections) {
+//     await collections[key].deleteMany();
+//   }
+//   await mongoose.disconnect();
+// }, 15000);
+
 afterAll(async () => {
+  console.log("Starting cleanup...");
+
+  // Clear all collections
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     await collections[key].deleteMany();
   }
+
+  // Disconnect mongoose
   await mongoose.disconnect();
-}, 15000);
+
+  // ✅ DISCONNECT REDIS using the helper
+  try {
+    const { disconnectRedis } = await import("../config/redis.config.js");
+    if (disconnectRedis) {
+      await disconnectRedis();
+      console.log("REDIS DISCONNECTED");
+    }
+  } catch (error) {
+    console.log("Redis disconnect error:", error.message);
+  }
+
+  // Clear all timers and mocks
+  jest.clearAllTimers();
+  jest.clearAllMocks();
+
+  if (global.server) {
+    await new Promise((resolve) => global.server.close(resolve));
+  }
+
+  console.log("Cleanup complete");
+}, 30000);
 
 describe("User API", () => {
   test("get my profile", async () => {
