@@ -11,6 +11,8 @@ import asyncHandler from "../utils/asyncHandler.utils.js";
 import { REFRESH_TOKEN_SECRET } from "../../config/env.config.js";
 import jwt from "jsonwebtoken";
 
+import redisClient from "../../config/redis.config.js";
+
 export const addOrChangeProfilePicture = asyncHandler(async (req, res) => {
   const profilePicture = req.file;
   console.log("00000: ", profilePicture);
@@ -30,7 +32,9 @@ export const addOrChangeProfilePicture = asyncHandler(async (req, res) => {
   const user = await User.findByIdAndUpdate(myUser._id, {
     profilePicture: cloudinaryPath,
   });
+  const userId = req.user._id;
 
+  await redisClient.del(`user:${userId}`);
   return res.status(200).json(new ApiResponse(200, user, "User here"));
 });
 
@@ -54,6 +58,9 @@ export const updateProfile = asyncHandler(async (req, res) => {
   const user = await User.findByIdAndUpdate(myUser._id, updateData, {
     new: true,
   }).select("-password");
+
+  const userId = req.user._id;
+  await redisClient.del(`user:${userId}`);
 
   return res.status(200).json(new ApiResponse(200, user, "User updated"));
 });
@@ -92,6 +99,9 @@ export const updatePassword = asyncHandler(async (req, res) => {
 
   await user.save();
 
+  const userId = req.user._id;
+  await redisClient.del(`user:${userId}`);
+
   return res.status(200).json(new ApiResponse(200, null, "Password Updated"));
 });
 
@@ -100,7 +110,9 @@ export const logOut = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(400, "User not loggedIn");
   }
+  const userId = req.user._id;
 
+  await redisClient.del(`user:${userId}`);
   return res
     .status(200)
     .clearCookie("accessToken")
@@ -155,11 +167,31 @@ export const changeForgottenPassword = asyncHandler(async (req, res) => {
   user.forgotPasswordOtp = undefined;
   user.forgotPasswordOtpExpiry = undefined;
   await user.save();
+  const userId = user._id;
+
+  await redisClient.del(`user:${userId}`);
+
   return res.status(200).json(new ApiResponse(200, null, "Password changed."));
 });
 
 export const userStats = asyncHandler(async (req, res) => {
   const myUser = req.user;
+
+  if (!myUser) {
+    throw new ApiError(401, "User not LoggedIn.");
+  }
+
+  const userId = req.user._id;
+
+  const cachedKey = `stats:${userId}`;
+
+  const cachedUserStats = await redisClient.get(cachedKey);
+  console.log("cachedUser stats", cachedUserStats);
+  if (cachedUserStats) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cachedUserStats), "This is urls"));
+  }
 
   const now = new Date();
 
@@ -182,30 +214,66 @@ export const userStats = asyncHandler(async (req, res) => {
     },
   ]);
 
+  if (!data) {
+    throw new ApiError(400, "Stats not found");
+  }
+
   const stats = data[0];
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        totalUrls: stats?.totalUrls ?? 0,
-        totalClicks: stats?.totalClicks ?? 0,
-        activeUrls: stats?.activeUrls ?? 0,
-        expiredUrls: stats?.expiredUrls ?? 0,
-      },
-      "This is urls",
-    ),
-  );
+  const userStatsFinal = {
+    totalUrls: stats?.totalUrls ?? 0,
+    totalClicks: stats?.totalClicks ?? 0,
+    activeUrls: stats?.activeUrls ?? 0,
+    expiredUrls: stats?.expiredUrls ?? 0,
+  };
+
+  await redisClient.setEx(cachedKey, 60, JSON.stringify(userStatsFinal));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, userStatsFinal, "This is urls"));
 });
+
+// Get User with
 
 export const getMe = asyncHandler(async (req, res) => {
   const myUser = req.user;
-  const user = await User.findById(myUser._id);
+
+  if (!myUser) {
+    throw new ApiError(401, "User not loggedIn");
+  }
+  const userId = req.user._id;
+
+  const cachedKey = `user:${userId}`;
+
+  const cachedUser = await redisClient.get(cachedKey);
+
+  console.log("cached user", cachedUser);
+  if (cachedUser) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cachedUser), "user"));
+  }
+
+  const user = await User.findById(myUser._id).select("-password");
   if (!user) {
     throw new ApiError(404, "user not found.");
   }
+
+  const cleanUser = user.toObject();
+
+  await redisClient.setEx(cachedKey, 60, JSON.stringify(cleanUser));
+
   return res.status(200).json(new ApiResponse(200, user, "user"));
 });
+// export const getMe = asyncHandler(async (req, res) => {
+//   const myUser = req.user;
+//   const user = await User.findById(myUser._id);
+//   if (!user) {
+//     throw new ApiError(404, "user not found.");
+//   }
+//   return res.status(200).json(new ApiResponse(200, user, "user"));
+// });
 
 export const refreshToken = asyncHandler(async (req, res) => {
   const refresh = req.cookies.refreshToken;

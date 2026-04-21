@@ -15,10 +15,12 @@ import { MONGO_URL } from "./config/env.config.js";
 // });
 
 app.use(globalError);
+console.log("-------------")
 
 connect_db(MONGO_URL).then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 });
+
 // this is it

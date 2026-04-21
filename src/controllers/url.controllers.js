@@ -13,6 +13,7 @@ import QRCode from "qrcode";
 
 import fetch from "node-fetch";
 import { useAgent } from "request-filtering-agent";
+import redisClient from "../../config/redis.config.js";
 
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url, expiryTime } = req.body;
@@ -83,6 +84,11 @@ export const generateUrl = asyncHandler(async (req, res) => {
   }
 
   const new_url = `${BASE_URL}/api/v1/url/${url.uniqueCode}`;
+
+  const userId = req.user._id;
+
+  await redisClient.del(`user:${userId}`);
+  await redisClient.del(`stats:${userId}`);
 
   return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
 });
@@ -279,6 +285,17 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
     throw new ApiError(400, "You are not authenticated");
   }
 
+  const userId = req.user._id;
+
+  const cachedKey = `urlStats:${userId}`;
+
+  const cachedUrlstats = await redisClient.get(cachedKey);
+  if (cachedUrlstats) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cachedUrlstats), "this is data"));
+  }
+
   const user = await User.findById(myUser._id);
   if (!user) {
     throw new ApiError(400, "You are not authenticated");
@@ -357,6 +374,8 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
 
   const stat = { clicks: url.clicks, countries, devices, browsers };
 
+  await redisClient.setEx(cachedKey, 60, JSON.stringify(stat));
+
   // return res.send(analytics);
   return res.status(200).json(new ApiResponse(200, stat, "this is data"));
 });
@@ -364,6 +383,16 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
 export const allUrlsOfUser = asyncHandler(async (req, res) => {
   console.log("PPPPPPPPPPPPP");
   const myUser = req.user;
+  const userId = req.user._id;
+
+  const cachedKey = `allUrlsOfUser:${userId}`;
+
+  const cachedAllUrls = await redisClient.get(cachedKey);
+  if (cachedAllUrls) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, JSON.parse(cachedAllUrls), "this is data"));
+  }
 
   const user = await User.findById(myUser._id);
   if (!user) {
@@ -374,26 +403,70 @@ export const allUrlsOfUser = asyncHandler(async (req, res) => {
 
   console.log("mmmmmmmmmmmmm", allUrls);
 
+  // const cleanAllUrls = allUrls.toObject();
+  await redisClient.setEx(cachedKey, 60, JSON.stringify(allUrls));
+
   return res.status(200).json(new ApiResponse(200, allUrls, "all url"));
 });
 
 export const allActiveUrls = asyncHandler(async (req, res) => {
   const myUser = req.user;
+  if (!myUser) {
+    throw new ApiError(401, "User not loggedIn");
+  }
+
+  const userId = req.user._id;
+
+  const cachedKey = `allActiveUrls:${userId}`;
+
+  const cachedAllActiveUrls = await redisClient.get(cachedKey);
+  if (cachedAllActiveUrls) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, JSON.parse(cachedAllActiveUrls), "this is data"),
+      );
+  }
+
   const allUrls = await Url.find({
     createdBy: myUser._id,
     expiryTime: { $gt: new Date() },
   });
   console.log(allUrls.length);
+
+  await redisClient.setEx(cachedKey, 60, JSON.stringify(allUrls));
+
   return res.status(200).json(new ApiResponse(200, allUrls, "All Active Urls"));
 });
 
 export const allExpiredUrls = asyncHandler(async (req, res) => {
   const myUser = req.user;
+
+  if (!myUser) {
+    throw new ApiError(401, "User not loggedIn");
+  }
+
+  const userId = req.user._id;
+
+  const cachedKey = `allExpiredUrls:${userId}`;
+
+  const cachedAllActiveUrls = await redisClient.get(cachedKey);
+  if (cachedAllActiveUrls) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, JSON.parse(cachedAllActiveUrls), "this is data"),
+      );
+  }
+
   const allUrls = await Url.find({
     createdBy: myUser._id,
     expiryTime: { $lt: new Date() },
   });
   console.log(allUrls.length);
+
+  await redisClient.set(cachedKey, 60, JSON.stringify(allUrls));
+
   return res
     .status(200)
     .json(new ApiResponse(200, allUrls, "All Expired Urls"));
@@ -401,6 +474,21 @@ export const allExpiredUrls = asyncHandler(async (req, res) => {
 
 export const allClicksOfUser = asyncHandler(async (req, res) => {
   const myUser = req.user;
+
+  if (!myUser) {
+    throw new ApiError(401, "User not loggedIn");
+  }
+
+  // const userId = req.user._id;
+
+  // const cachedKey = `allClicksOfUser:${userId}`;
+
+  // const cachedallClicksOfUser = await redisClient.get(cachedKey);
+  // if (cachedallClicksOfUser) {
+  //   return res
+  //     .status(200)
+  //     .json(new ApiResponse(200, JSON.parse(cachedallClicksOfUser), "data"));
+  // }
 
   const data = await Url.aggregate([
     {
@@ -415,6 +503,9 @@ export const allClicksOfUser = asyncHandler(async (req, res) => {
       },
     },
   ]);
+
+  // await redisClient.setEx(cachedKey, 60, JSON.stringify(data));
+
   return res.status(200).json(new ApiResponse(200, data, "data"));
 });
 
@@ -438,6 +529,18 @@ export const deleteUrl = asyncHandler(async (req, res) => {
     throw new ApiError(400, "not found url");
   }
   console.log("deleted: ", deletedId);
+
+  const userId = req.user._id;
+
+  await Promise.all([
+    redisClient.del(`user:${userId}`),
+    redisClient.del(`stats:${userId}`),
+    redisClient.del(`urlStats:${userId}`),
+    redisClient.del(`allUrlsOfUser:${userId}`),
+    redisClient.del(`allActiveUrls:${userId}`),
+    // redisClient.del(`allClicksOfUser:${userId}`),
+  ]);
+
   return res.status(200).json(new ApiResponse(200, null, "deleted"));
 });
 
@@ -459,6 +562,18 @@ export const deActivate = asyncHandler(async (req, res) => {
   } else {
     findUrl.isDeActivate = true;
     await findUrl.save({ validateBeforeSave: false });
+
+    const userId = req.user._id;
+
+    await Promise.all([
+      redisClient.del(`user:${userId}`),
+      redisClient.del(`stats:${userId}`),
+      redisClient.del(`urlStats:${userId}`),
+      redisClient.del(`allUrlsOfUser:${userId}`),
+      redisClient.del(`allActiveUrls:${userId}`),
+      // redisClient.del(`allClicksOfUser:${userId}`),
+    ]);
+
     res.status(200).json(new ApiResponse(200, null, "DeActivated"));
   }
 });

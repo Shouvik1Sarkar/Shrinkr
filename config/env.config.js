@@ -20,4 +20,5 @@ export const {
   REFRESH_TOKEN_SECRET,
   REFRESH_TOKEN_EXPIRES,
   MONGODB_TEST_URL,
+  REDIS_URL,
 } = process.env;
