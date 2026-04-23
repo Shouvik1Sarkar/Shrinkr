@@ -17,27 +17,23 @@ import redisClient from "../../config/redis.config.js";
 
 export const generateUrl = asyncHandler(async (req, res) => {
   const { original_url, expiryTime } = req.body;
+
   if (!original_url) {
-    console.log("not");
-    throw new ApiError(401, "please enter url");
+    throw new ApiError(400, "Please enter a URL");
   }
 
-  // ✅ Step 1: Validate URL format
   try {
-    const a = new URL(original_url);
-    console.log("00000: ", a);
+    new URL(original_url);
   } catch {
     throw new ApiError(400, "Invalid URL format");
   }
 
-  // ✅ Step 2: Check if URL is reachable (runs server-side, no CORS issues)
   try {
     const response = await fetch(original_url, {
       method: "HEAD",
       signal: AbortSignal.timeout(5000),
       agent: useAgent(original_url),
     });
-    console.log("RESPONSE: ", response);
 
     if (!response.ok) {
       throw new ApiError(
@@ -46,7 +42,7 @@ export const generateUrl = asyncHandler(async (req, res) => {
       );
     }
   } catch (error) {
-    if (error instanceof ApiError) throw error; // rethrow your own errors
+    if (error instanceof ApiError) throw error;
 
     if (error.name === "AbortError" || error.name === "TimeoutError") {
       throw new ApiError(400, "URL timed out — site may be down");
@@ -56,12 +52,10 @@ export const generateUrl = asyncHandler(async (req, res) => {
   }
 
   const myUser = req.user;
-
   const user = await User.findById(myUser?._id);
-  console.log("THIS IS ID: ", user);
+
   const now = new Date();
   const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  // const sevenDaysLater = new Date(now.getTime() + 1 * 60 * 1000);
   const customExpiry = parseExpiry(expiryTime);
 
   let uniqueCode;
@@ -71,50 +65,47 @@ export const generateUrl = asyncHandler(async (req, res) => {
     uniqueCode = crypto.randomBytes(8).toString("base64url");
     exists = await Url.findOne({ uniqueCode });
   }
-  // console.log("00000000");
+
   const url = await Url.create({
     redirectUrl: original_url,
-    uniqueCode: uniqueCode,
+    uniqueCode,
     expiryTime: customExpiry ?? sevenDaysLater,
-    createdBy: user._id ?? undefined,
+    createdBy: user?._id ?? undefined,
   });
 
   if (!url) {
-    throw new ApiError(401, "Url not created.");
+    throw new ApiError(500, "URL not created");
   }
 
   const new_url = `${BASE_URL}/api/v1/url/${url.uniqueCode}`;
-
   const userId = req.user._id;
 
   await redisClient.del(`user:${userId}`);
   await redisClient.del(`stats:${userId}`);
 
-  return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
+  return res
+    .status(201)
+    .json(new ApiResponse(201, [new_url, url], "URL created"));
 });
 
 export const generateCustomizedUrl = asyncHandler(async (req, res) => {
   const { original_url, expiryTime } = req.body;
+
   if (!original_url) {
-    console.log("not");
-    throw new ApiError(401, "please enter url");
+    throw new ApiError(400, "Please enter a URL");
   }
 
-  // ✅ Step 1: Validate URL format
   try {
-    const a = new URL(original_url);
-    console.log("00000: ", a);
+    new URL(original_url);
   } catch {
     throw new ApiError(400, "Invalid URL format");
   }
 
-  // ✅ Step 2: Check if URL is reachable (runs server-side, no CORS issues)
   try {
     const response = await fetch(original_url, {
       method: "HEAD",
       signal: AbortSignal.timeout(5000),
     });
-    console.log("RESPONSE: ", response);
 
     if (!response.ok) {
       throw new ApiError(
@@ -123,7 +114,7 @@ export const generateCustomizedUrl = asyncHandler(async (req, res) => {
       );
     }
   } catch (error) {
-    if (error instanceof ApiError) throw error; // rethrow your own errors
+    if (error instanceof ApiError) throw error;
 
     if (error.name === "AbortError" || error.name === "TimeoutError") {
       throw new ApiError(400, "URL timed out — site may be down");
@@ -133,58 +124,51 @@ export const generateCustomizedUrl = asyncHandler(async (req, res) => {
   }
 
   const customExpiry = parseExpiry(expiryTime);
-  // if (!customExpiry) {
-  //   throw new ApiError(400, "not expiry time");
-  // }
   const myUser = req.user;
-
   const user = await User.findById(myUser?._id);
-  console.log("THIS IS ID: ", user);
+
   const now = new Date();
   const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  // const sevenDaysLater = new Date(now.getTime() + 1 * 60 * 1000);
 
-  let { uniqueCode } = req.body;
-  let exists = await Url.findOne({ uniqueCode });
+  const { uniqueCode } = req.body;
+  const exists = await Url.findOne({ uniqueCode });
 
   if (exists) {
-    throw new ApiError(400, "Already exists");
+    throw new ApiError(409, "Custom code already exists");
   }
-
-  // console.log("00000000");
 
   const url = await Url.create({
     redirectUrl: original_url,
-    uniqueCode: uniqueCode,
+    uniqueCode,
     expiryTime: customExpiry ?? sevenDaysLater,
-    createdBy: user._id ?? undefined,
+    createdBy: user?._id ?? undefined,
   });
 
   if (!url) {
-    throw new ApiError(401, "Url not created.");
+    throw new ApiError(500, "URL not created");
   }
 
   const new_url = `${BASE_URL}/api/v1/url/${url.uniqueCode}`;
 
-  return res.status(200).json(new ApiResponse(200, [new_url, url], "hello"));
+  return res
+    .status(201)
+    .json(new ApiResponse(201, [new_url, url], "URL created"));
 });
 
 export const generateQRCode = asyncHandler(async (req, res) => {
   const { original_url } = req.body;
+
   try {
-    const a = new URL(original_url);
-    console.log("00000: ", a);
+    new URL(original_url);
   } catch {
     throw new ApiError(400, "Invalid URL format");
   }
 
-  // ✅ Step 2: Check if URL is reachable (runs server-side, no CORS issues)
   try {
     const response = await fetch(original_url, {
       method: "HEAD",
       signal: AbortSignal.timeout(5000),
     });
-    console.log("RESPONSE: ", response);
 
     if (!response.ok) {
       throw new ApiError(
@@ -193,7 +177,7 @@ export const generateQRCode = asyncHandler(async (req, res) => {
       );
     }
   } catch (error) {
-    if (error instanceof ApiError) throw error; // rethrow your own errors
+    if (error instanceof ApiError) throw error;
 
     if (error.name === "AbortError" || error.name === "TimeoutError") {
       throw new ApiError(400, "URL timed out — site may be down");
@@ -201,8 +185,8 @@ export const generateQRCode = asyncHandler(async (req, res) => {
 
     throw new ApiError(400, `URL is not reachable: ${error.message}`);
   }
+
   try {
-    // returns a base64 encoded PNG string
     const qrCode = await QRCode.toDataURL(original_url, {
       width: 300,
       margin: 2,
@@ -211,143 +195,87 @@ export const generateQRCode = asyncHandler(async (req, res) => {
         light: "#ffffff",
       },
     });
-    // return qrCode; // looks like: "data:image/png;base64,iVBORw0KGgo..."
-    return res.status(200).json(new ApiResponse(200, qrCode, "done"));
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, qrCode, "QR code generated"));
   } catch (error) {
-    throw new Error(`QR code generation failed: ${error}`);
+    throw new ApiError(500, `QR code generation failed: ${error}`);
   }
 });
 
 export const redirectUrl = asyncHandler(async (req, res) => {
   const { code } = req.params;
-  console.log("CODE: ", code);
+
   const url = await Url.findOne({
     uniqueCode: code,
     expiryTime: { $gt: Date.now() },
   });
 
   if (!url) {
-    throw new ApiError(404, "URL NOT FOUND");
+    throw new ApiError(404, "URL not found");
   }
 
   if (url.isDeActivate) {
-    console.log("deactivatred");
-    throw new ApiError(404, "de activated");
+    throw new ApiError(410, "URL has been deactivated");
   }
-
-  console.log("DEACTIVATED: ", url.isDeActivate);
 
   const ip =
     req.headers["x-forwarded-for"] || req.socket.remoteAddress || req.ip;
-
   const geo = geoip.lookup(ip);
-  console.log("GEO----------", geo);
   const country = geo?.country || "Unknown";
   const parser = new UAParser(req.headers["user-agent"]);
-  console.log("0x0x0x0x0x: ", parser.getDevice());
-  const device = parser.getDevice().type || "desktop--";
+  const device = parser.getDevice().type || "desktop";
   const browser = parser.getBrowser().name;
   const os = parser.getOS().name;
 
-  console.log("---------", parser.getDevice().type);
-  console.log("---------", os);
-
   const original_url = url.redirectUrl;
-  let click = url.clicks;
-  console.log("---", click);
-
-  click += 1;
-  console.log("xxx", click);
-  url.clicks = click;
-
+  url.clicks += 1;
   await url.save();
-  //************Later**************/
-  // add user (created By)
 
-  const analytics = await Analytics.create({
-    url: url._id,
-    ip,
-    country,
-    device,
-    browser,
-    os,
-  });
-
-  console.log("URL: ", url);
-  console.log("analytics: ", analytics);
+  await Analytics.create({ url: url._id, ip, country, device, browser, os });
 
   return res.status(302).redirect(original_url);
 });
 
 export const getUrlStarts = asyncHandler(async (req, res) => {
   const myUser = req.user;
+
   if (!myUser) {
-    throw new ApiError(400, "You are not authenticated");
+    throw new ApiError(401, "Not logged in");
   }
 
-  const userId = req.user._id;
-
+  const userId = user._id;
   const cachedKey = `urlStats:${userId}`;
 
   const cachedUrlstats = await redisClient.get(cachedKey);
   if (cachedUrlstats) {
     return res
       .status(200)
-      .json(new ApiResponse(200, JSON.parse(cachedUrlstats), "this is data"));
+      .json(new ApiResponse(200, JSON.parse(cachedUrlstats), "URL stats"));
   }
 
   const user = await User.findById(myUser._id);
+
   if (!user) {
-    throw new ApiError(400, "You are not authenticated");
+    throw new ApiError(404, "User not found");
   }
+
   const { code } = req.params;
   const url = await Url.findOne({ createdBy: user._id, uniqueCode: code });
-  console.log("url: ", url); // new ObjectId('69aef5e668641ee3108aaea5'),
+
   if (!url) {
-    console.log("URL not found");
-    throw new ApiError(400, "URL not found");
+    throw new ApiError(404, "URL not found");
   }
 
   const result = await Analytics.aggregate([
-    {
-      $match: {
-        url: url._id,
-      },
-    },
+    { $match: { url: url._id } },
     {
       $facet: {
-        totalClicks: [
-          {
-            $count: "count",
-          },
-        ],
-
-        countries: [
-          {
-            $group: {
-              _id: "$country",
-              clicks: { $sum: 1 },
-            },
-          },
-        ],
-
-        devices: [
-          {
-            $group: {
-              _id: "$device",
-              clicks: { $sum: 1 },
-            },
-          },
-        ],
-
-        browsers: [
-          {
-            $group: {
-              _id: "$browser",
-              clicks: { $sum: 1 },
-            },
-          },
-        ],
+        totalClicks: [{ $count: "count" }],
+        countries: [{ $group: { _id: "$country", clicks: { $sum: 1 } } }],
+        devices: [{ $group: { _id: "$device", clicks: { $sum: 1 } } }],
+        browsers: [{ $group: { _id: "$browser", clicks: { $sum: 1 } } }],
       },
     },
   ]);
@@ -355,19 +283,16 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
   const data = result[0] ?? {};
 
   const countries = {};
-  // console.lo
   data.countries.forEach((d) => {
     countries[d._id] = d.clicks;
   });
 
   const devices = {};
-  // console.lo
   data.devices.forEach((d) => {
     devices[d._id] = d.clicks;
   });
 
   const browsers = {};
-  // console.lo
   data.browsers.forEach((d) => {
     browsers[d._id] = d.clicks;
   });
@@ -376,47 +301,47 @@ export const getUrlStarts = asyncHandler(async (req, res) => {
 
   await redisClient.setEx(cachedKey, 60, JSON.stringify(stat));
 
-  // return res.send(analytics);
-  return res.status(200).json(new ApiResponse(200, stat, "this is data"));
+  return res.status(200).json(new ApiResponse(200, stat, "URL stats"));
 });
 
 export const allUrlsOfUser = asyncHandler(async (req, res) => {
-  console.log("PPPPPPPPPPPPP");
   const myUser = req.user;
-  const userId = req.user._id;
 
+  if (!myUser) {
+    throw new ApiError(401, "Not logged in");
+  }
+
+  const userId = myUser._id;
   const cachedKey = `allUrlsOfUser:${userId}`;
 
   const cachedAllUrls = await redisClient.get(cachedKey);
   if (cachedAllUrls) {
     return res
       .status(200)
-      .json(new ApiResponse(200, JSON.parse(cachedAllUrls), "this is data"));
+      .json(new ApiResponse(200, JSON.parse(cachedAllUrls), "All URLs"));
   }
 
-  const user = await User.findById(myUser._id);
+  const user = await User.findById(userId);
+
   if (!user) {
-    throw new ApiError(400, user, "User not LoggedIn");
+    throw new ApiError(404, "User not found");
   }
 
   const allUrls = await Url.find({ createdBy: user._id });
 
-  console.log("mmmmmmmmmmmmm", allUrls);
-
-  // const cleanAllUrls = allUrls.toObject();
   await redisClient.setEx(cachedKey, 60, JSON.stringify(allUrls));
 
-  return res.status(200).json(new ApiResponse(200, allUrls, "all url"));
+  return res.status(200).json(new ApiResponse(200, allUrls, "All URLs"));
 });
 
 export const allActiveUrls = asyncHandler(async (req, res) => {
   const myUser = req.user;
+
   if (!myUser) {
-    throw new ApiError(401, "User not loggedIn");
+    throw new ApiError(401, "User not logged in");
   }
 
-  const userId = req.user._id;
-
+  const userId = myUser._id;
   const cachedKey = `allActiveUrls:${userId}`;
 
   const cachedAllActiveUrls = await redisClient.get(cachedKey);
@@ -424,52 +349,57 @@ export const allActiveUrls = asyncHandler(async (req, res) => {
     return res
       .status(200)
       .json(
-        new ApiResponse(200, JSON.parse(cachedAllActiveUrls), "this is data"),
+        new ApiResponse(
+          200,
+          JSON.parse(cachedAllActiveUrls),
+          "All active URLs",
+        ),
       );
   }
 
   const allUrls = await Url.find({
-    createdBy: myUser._id,
+    createdBy: userId,
     expiryTime: { $gt: new Date() },
   });
-  console.log(allUrls.length);
 
   await redisClient.setEx(cachedKey, 60, JSON.stringify(allUrls));
 
-  return res.status(200).json(new ApiResponse(200, allUrls, "All Active Urls"));
+  return res.status(200).json(new ApiResponse(200, allUrls, "All active URLs"));
 });
 
 export const allExpiredUrls = asyncHandler(async (req, res) => {
   const myUser = req.user;
 
   if (!myUser) {
-    throw new ApiError(401, "User not loggedIn");
+    throw new ApiError(401, "User not logged in");
   }
 
-  const userId = req.user._id;
-
+  const userId = myUser._id;
   const cachedKey = `allExpiredUrls:${userId}`;
 
-  const cachedAllActiveUrls = await redisClient.get(cachedKey);
-  if (cachedAllActiveUrls) {
+  const cachedAllExpiredUrls = await redisClient.get(cachedKey);
+  if (cachedAllExpiredUrls) {
     return res
       .status(200)
       .json(
-        new ApiResponse(200, JSON.parse(cachedAllActiveUrls), "this is data"),
+        new ApiResponse(
+          200,
+          JSON.parse(cachedAllExpiredUrls),
+          "All expired URLs",
+        ),
       );
   }
 
   const allUrls = await Url.find({
-    createdBy: myUser._id,
+    createdBy: userId,
     expiryTime: { $lt: new Date() },
   });
-  console.log(allUrls.length);
 
-  await redisClient.set(cachedKey, 60, JSON.stringify(allUrls));
+  await redisClient.setEx(cachedKey, 60, JSON.stringify(allUrls));
 
   return res
     .status(200)
-    .json(new ApiResponse(200, allUrls, "All Expired Urls"));
+    .json(new ApiResponse(200, allUrls, "All expired URLs"));
 });
 
 export const allClicksOfUser = asyncHandler(async (req, res) => {
@@ -512,12 +442,15 @@ export const allClicksOfUser = asyncHandler(async (req, res) => {
 export const deleteUrl = asyncHandler(async (req, res) => {
   const myUser = req.user;
 
-  const user = await User.findById(myUser._id);
-  // console.log("user id: ", user);
-  if (!user) {
-    throw new ApiError(400, "User not logged In");
+  if (!myUser) {
+    throw new ApiError(401, "Not logged in");
   }
-  // console.log("user id: ", user);
+
+  const user = await User.findById(myUser._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
   const { url } = req.params;
 
@@ -525,12 +458,12 @@ export const deleteUrl = asyncHandler(async (req, res) => {
     createdBy: user._id,
     uniqueCode: url,
   });
-  if (!deletedId) {
-    throw new ApiError(400, "not found url");
-  }
-  console.log("deleted: ", deletedId);
 
-  const userId = req.user._id;
+  if (!deletedId) {
+    throw new ApiError(404, "URL not found");
+  }
+
+  const userId = user._id;
 
   await Promise.all([
     redisClient.del(`user:${userId}`),
@@ -538,32 +471,40 @@ export const deleteUrl = asyncHandler(async (req, res) => {
     redisClient.del(`urlStats:${userId}`),
     redisClient.del(`allUrlsOfUser:${userId}`),
     redisClient.del(`allActiveUrls:${userId}`),
-    // redisClient.del(`allClicksOfUser:${userId}`),
   ]);
 
-  return res.status(200).json(new ApiResponse(200, null, "deleted"));
+  return res.status(200).json(new ApiResponse(200, null, "URL deleted"));
 });
 
 export const deActivate = asyncHandler(async (req, res) => {
-  const { url } = req.params;
-
   const myUser = req.user;
+
+  if (!myUser) {
+    throw new ApiError(401, "Not logged in");
+  }
+
   const user = await User.findById(myUser._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const { url } = req.params;
   const findUrl = await Url.findOne({ createdBy: user._id, uniqueCode: url });
 
   if (!findUrl) {
-    throw new ApiError(400, "URL NOT FOUND");
+    throw new ApiError(404, "URL not found");
   }
+
+  const userId = user._id;
 
   if (findUrl.isDeActivate) {
     findUrl.isDeActivate = false;
     await findUrl.save({ validateBeforeSave: false });
-    res.status(200).json(new ApiResponse(200, null, "ReActivated"));
+    return res.status(200).json(new ApiResponse(200, null, "URL reactivated"));
   } else {
     findUrl.isDeActivate = true;
     await findUrl.save({ validateBeforeSave: false });
-
-    const userId = req.user._id;
 
     await Promise.all([
       redisClient.del(`user:${userId}`),
@@ -571,10 +512,9 @@ export const deActivate = asyncHandler(async (req, res) => {
       redisClient.del(`urlStats:${userId}`),
       redisClient.del(`allUrlsOfUser:${userId}`),
       redisClient.del(`allActiveUrls:${userId}`),
-      // redisClient.del(`allClicksOfUser:${userId}`),
     ]);
 
-    res.status(200).json(new ApiResponse(200, null, "DeActivated"));
+    return res.status(200).json(new ApiResponse(200, null, "URL deactivated"));
   }
 });
 
