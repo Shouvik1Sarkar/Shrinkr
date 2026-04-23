@@ -38,7 +38,7 @@ app.use(
 );
 app.use(cookieParser());
 // app.use(express.json());
-// app.use(arcjetMiddleware);
+app.use(arcjetMiddleware);
 app.use("/api/v1/auth/", authRoute);
 app.use("/api/v1/url/", urlRoutes);
 app.use("/api/v1/user/", userRoutes);
